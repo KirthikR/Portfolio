@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Kirthik Ramadoss - Senior Software Engineer & Full Stack Developer Portfolio" />
+    
+    <!-- Browser hints for better performance -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="color-scheme" content="dark light" />
+    <!-- Theme color for Chrome, Edge, and Safari -->
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <!-- Firefox and Opera support via manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preconnect to external resources instead of preloading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://images.unsplash.com" />
+    
+    <title>Kirthik Ramadoss - Portfolio</title>
+    
+    <!-- Inline critical CSS for faster rendering -->
+    <style>
+      /* Critical styles that should load immediately */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #111827;
+        color: #fff;
+      }
+      
+      /* Loading indicator styles */
+      .loading-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #111827;
+        z-index: 9999;
+      }
+      
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(255,255,255,0.1);
+        border-radius: 50%;
+        border-top-color: #818cf8;
+        animation: spin 1s ease-in-out infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <!-- Fixed early connection script -->
+    <script>
+      // Establish early connection without using preload
+      (function() {
+        var conn = navigator.connection;
+        if (!conn || (conn.effectiveType !== 'slow-2g' && conn.effectiveType !== '2g')) {
+          // Create connection to origin using fetch instead of preload
+          setTimeout(function() {
+            fetch(window.location.origin + '?_conn_init=1')
+              .catch(function(e) {
+                // Silently fail - this is just an optimization
+              });
+          }, 500);
+        }
+        
+        // Add browser hints for performance
+        document.documentElement.style.scrollBehavior = 'smooth';
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- Initial loading indicator -->
+    <div id="initial-loader" class="loading-container">
+      <div class="loading-spinner"></div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Remove loader once the app is loaded -->
+    <script>
+      window.addEventListener('load', function() {
+        var loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.3s ease';
+          setTimeout(function() {
+            loader.style.display = 'none';
+          }, 300);
+        }
+      });
+    </script>
+    
+    <!-- Intersection Observer polyfill - loaded conditionally and asynchronously -->
+    <script>
+      if (!('IntersectionObserver' in window)) {
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver';
+        document.head.appendChild(script);
+      }
+    </script>
+  </body>
+</html>

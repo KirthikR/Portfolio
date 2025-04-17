@@ -1,0 +1,84 @@
+/**
+ * Performance optimizations via CSS
+ */
+
+/* Force hardware acceleration */
+.force-hardware-acceleration {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+/* Force GPU rendering on critical animated elements */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Styles for low FPS mode */
+.low-fps-mode .animation-heavy {
+  animation: none !important;
+  transition: none !important;
+}
+
+.low-fps-mode .parallax-effect {
+  transform: none !important;
+}
+
+.low-fps-mode .blur-effect {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+.low-fps-mode .shadow-effect {
+  box-shadow: none !important;
+}
+
+/* Content-visibility optimizations */
+.optimize-visibility {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px; /* Estimate of content size */
+}
+
+/* Only apply fancy effects on higher-end devices */
+@media (prefers-reduced-motion: reduce) {
+  .motion-effect {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .parallax-effect {
+    transform: none !important;
+  }
+}
+
+/* Optimize rendering during scroll */
+.scroll-optimize {
+  transition: none !important;
+}
+
+/* Container elements that use virtualization */
+.virtualized-container {
+  contain: layout style;
+}
+
+/* Optimizations for layout thrashing prevention */
+.layout-buffer {
+  contain: layout;
+}
+
+/* Optimize transitions by using compositor-only properties */
+.optimize-transitions {
+  transition-property: transform, opacity;
+}
+
+/* Specific optimizations for complex gradient animations */
+@supports (background: paint(something)) {
+  .optimize-gradient-animation {
+    background-image: none !important;
+    background: paint(optimizedGradient);
+  }
+}
