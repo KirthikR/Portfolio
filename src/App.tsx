@@ -10,6 +10,7 @@ import LuxuryAboutSection from './components/LuxuryAboutSection';
 import OptimizedSkillsSection from './components/OptimizedSkillsSection';
 import { AnimatePresence, LayoutGroup, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import UltraPremiumHeroSection from './components/UltraPremiumHeroSection';
+import IntroScreen from './components/IntroScreen';
 
 // Lazy load heavy components with appropriate loading states
 const OptimizedFloatingBubbles = lazy(() => 
@@ -1052,9 +1053,24 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
 });
 
 function App() {
+  const [showIntro, setShowIntro] = useState(true);
+  const [declinedAccess, setDeclinedAccess] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [isHovering, setIsHovering] = useState<string | null>(null);
+  
+  // Handle intro completion
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false);
+  }, []);
+
+  // Handle intro declined - make sure this function works properly
+  const handleIntroDeclined = useCallback(() => {
+    console.log("User declined access"); // Add logging for debugging
+    setDeclinedAccess(true);
+    setShowIntro(false);
+  }, []);
   
   // Memoize handlers to prevent unnecessary re-renders
   const handleSectionActive = useCallback((section: string) => {
@@ -1065,112 +1081,406 @@ function App() {
     setDarkMode(prev => !prev);
   }, []);
 
-  return (
-    <ScrollOptimizationProvider>
-      <div className={`${darkMode ? 'dark' : ''} min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white force-hardware-acceleration`}>
-        {/* Navigation Bar */}
-        <motion.nav
-          initial={{ opacity: 0, y: -50 }}
+  // Animation variants for staggered animations
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 24 
+      }
+    }
+  };
+
+  // Logo text animation for splitting characters
+  const logoText = "Portfolio";
+  const logoChars = Array.from(logoText);
+
+  // In the declined access UI, enhance the button to make it more noticeable
+  if (declinedAccess) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white flex flex-col items-center justify-center p-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="fixed top-0 left-0 w-full backdrop-blur-sm bg-black bg-opacity-20 shadow-lg z-50 will-change-transform"
+          className="max-w-xl w-full text-center"
         >
-          <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
-            <motion.h1 
-              className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-300"
-              whileHover={{
-                scale: 1.05,
-                textShadow: "0 0 8px rgba(255,255,255,0.5)"
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 200, 
+              damping: 15,
+              delay: 0.3
+            }}
+            className="w-24 h-24 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full mx-auto mb-8 flex items-center justify-center"
+          >
+            <motion.div
+              animate={{ 
+                rotate: 360,
               }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="w-full h-full flex items-center justify-center"
             >
-              Portfolio
-            </motion.h1>
-            <div className="flex space-x-4">
-              {['about', 'skills', 'projects', 'contact'].map((section) => (
-                <ScrollLink
-                  key={section}
-                  to={section}
-                  smooth={true}
-                  duration={500}
-                  offset={-80}
-                  className={`px-4 py-2 rounded-lg cursor-pointer transition-all duration-300 ${
-                    activeSection === section
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-[0_0_15px_rgba(102,126,234,0.5)]'
-                      : 'bg-gray-800 bg-opacity-50 backdrop-blur-sm text-gray-300 hover:bg-opacity-80'
-                  }`}
-                  onSetActive={() => handleSectionActive(section)}
-                >
-                  {section.charAt(0).toUpperCase() + section.slice(1)}
-                </ScrollLink>
-              ))}
-              <motion.button
-                onClick={handleDarkModeToggle}
-                whileTap={{ scale: 0.95 }}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-lg shadow-lg hover:shadow-amber-500/20"
-              >
-                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </motion.button>
-            </div>
-          </div>
-        </motion.nav>
-
-        {/* Hero Section - Now using UltraPremiumHeroSection */}
-        <Element name="hero">
-          <UltraPremiumHeroSection isDarkMode={darkMode} />
-        </Element>
-
-        {/* About Section */}
-        <Element name="about" className="relative z-10 optimize-scroll">
-          <section id="about" className="w-full">
-            <LuxuryAboutSection />
-          </section>
-        </Element>
-
-        {/* Skills Section */}
-        <Element name="skills" className="relative z-10 optimize-scroll">
-          <section id="skills" className="w-full">
-            <OptimizedSkillsSection />
-          </section>
-        </Element>
-
-        <Element name="projects" className="optimize-scroll">
-          <EnhancedProjectSection />
-        </Element>
-
-        <Element name="contact" className="optimize-scroll">
-          <EnhancedContactSection />
-        </Element>
-
-        <footer className="py-10 px-8 bg-gray-900">
-          <div className="max-w-4xl mx-auto text-center">
-            <p className="text-gray-400 mb-4">© 2025 Kirthik Ramadoss. All rights reserved.</p>
-            <div className="flex justify-center gap-6">
-              <a 
-                href="https://github.com/KirthikR" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-gray-400 hover:text-pink-500 transition-colors"
-              >
-                <Github className="w-6 h-6" />
-              </a>
-              <a 
-                href="https://www.linkedin.com/in/kirthik-r-3413a7233/" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-gray-400 hover:text-blue-500 transition-colors"
-              >
-                <Linkedin className="w-6 h-6" />
-              </a>
-              <a 
-                href="mailto:kirthikramadoss@gmail.com" 
-                className="text-gray-400 hover:text-green-500 transition-colors"
-              >
-                <Mail className="w-6 h-6" />
-              </a>
-            </div>
-          </div>
-        </footer>
+              <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white">
+                <path d="M9 19l-7-7 7-7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 12h16a4 4 0 0 0 0-8 4 4 0 0 0-8 0M19 12a4 4 0 0 1 0 8H3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </motion.div>
+          </motion.div>
+          
+          <motion.h1 
+            className="text-4xl md:text-5xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500"
+            animate={{
+              backgroundPosition: ['0% center', '100% center', '0% center'],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              repeatType: "mirror"
+            }}
+            style={{
+              backgroundSize: '300% auto',
+            }}
+          >
+            Come Back Soon
+          </motion.h1>
+          
+          <motion.p 
+            className="text-gray-400 text-xl mb-12"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
+            You've chosen to postpone exploring my portfolio. I'd love to show you my work when you're ready.
+          </motion.p>
+          
+          <motion.button
+            onClick={() => {
+              console.log("User wants to try again"); // Add logging for debugging
+              setDeclinedAccess(false);
+              setShowIntro(true);
+            }}
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full text-white font-medium"
+            whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(139, 92, 246, 0.5)" }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Give It Another Try
+          </motion.button>
+        </motion.div>
       </div>
+    );
+  }
+
+  return (
+    <ScrollOptimizationProvider>
+      <AnimatePresence>
+        {showIntro && (
+          <IntroScreen 
+            onComplete={handleIntroComplete} 
+            onDecline={handleIntroDeclined}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!showIntro && (
+          <motion.div 
+            className={`${darkMode ? 'dark' : ''} min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white force-hardware-acceleration`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
+            {/* Enhanced Premium Navigation Bar */}
+            <motion.nav
+              initial={{ opacity: 0, y: -50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ 
+                duration: 0.8, 
+                type: "spring", 
+                stiffness: 100, 
+                damping: 20,
+                delay: 0.5
+              }}
+              className="fixed top-0 left-0 w-full backdrop-blur-lg bg-black/30 shadow-[0_2px_20px_rgba(0,0,0,0.4)] z-50 will-change-transform border-b border-white/5"
+            >
+              <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+                {/* Premium Animated Logo */}
+                <div className="relative">
+                  {/* Animated glow effect background */}
+                  <motion.div 
+                    className="absolute -inset-1 rounded-lg bg-gradient-to-r from-purple-600 to-blue-500 opacity-30 blur-xl"
+                    animate={{ 
+                      scale: [1, 1.1, 1],
+                      opacity: [0.2, 0.3, 0.2],
+                    }}
+                    transition={{
+                      duration: 4,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                  />
+                  
+                  <motion.div 
+                    className="relative px-3 py-1 rounded-lg"
+                    whileHover={{ scale: 1.03 }}
+                  >
+                    <motion.div className="flex overflow-hidden">
+                      {logoChars.map((char, index) => (
+                        <motion.span
+                          key={`char-${index}`}
+                          className="text-2xl font-extrabold inline-block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500"
+                          style={{
+                            textShadow: "0 0 10px rgba(139, 92, 246, 0.5)",
+                            willChange: "transform"
+                          }}
+                          initial={{ y: 40 }}
+                          animate={{ y: 0 }}
+                          transition={{
+                            duration: 0.5,
+                            delay: 1 + index * 0.05,
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 13
+                          }}
+                          whileHover={{
+                            y: -3,
+                            color: "#fff",
+                            transition: { duration: 0.2 }
+                          }}
+                        >
+                          {char}
+                        </motion.span>
+                      ))}
+                    </motion.div>
+                    
+                    {/* Subtle line animation under logo */}
+                    <motion.div
+                      className="h-0.5 w-full bg-gradient-to-r from-transparent via-purple-500 to-transparent absolute bottom-0 left-0"
+                      initial={{ scaleX: 0, opacity: 0 }}
+                      animate={{ 
+                        scaleX: [0, 1, 0], 
+                        opacity: [0, 0.8, 0],
+                        left: ["0%", "0%", "100%"] 
+                      }}
+                      transition={{ 
+                        duration: 6,
+                        repeat: Infinity,
+                        repeatType: "loop"
+                      }}
+                    />
+                  </motion.div>
+                </div>
+                
+                {/* Ultra Premium Navigation Links */}
+                <motion.div 
+                  className="flex space-x-2 md:space-x-4 items-center"
+                  variants={containerVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {['about', 'skills', 'projects', 'contact'].map((section) => {
+                    const isActive = activeSection === section;
+                    
+                    return (
+                      <motion.div
+                        key={section}
+                        variants={itemVariants}
+                        className="relative will-change-transform"
+                        onHoverStart={() => setIsHovering(section)}
+                        onHoverEnd={() => setIsHovering(null)}
+                      >
+                        {/* Animated background for hover state */}
+                        <AnimatePresence>
+                          {(isHovering === section || isActive) && (
+                            <motion.div
+                              className="absolute inset-0 rounded-lg"
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ 
+                                opacity: 1, 
+                                scale: 1.05,
+                                background: isActive 
+                                  ? "linear-gradient(135deg, rgba(124, 58, 237, 0.6), rgba(139, 92, 246, 0.6))" 
+                                  : "linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(139, 92, 246, 0.2))"
+                              }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              transition={{ duration: 0.2 }}
+                              style={{
+                                boxShadow: isActive 
+                                  ? "0 0 20px 2px rgba(139, 92, 246, 0.3)" 
+                                  : "0 0 10px rgba(139, 92, 246, 0.2)"
+                              }}
+                            />
+                          )}
+                        </AnimatePresence>
+
+                        <ScrollLink
+                          to={section}
+                          smooth={true}
+                          duration={500}
+                          offset={-80}
+                          className={`relative px-4 py-2 block rounded-lg transition-all duration-300 z-10`}
+                          onSetActive={() => handleSectionActive(section)}
+                        >
+                          <motion.div 
+                            className="relative z-10 text-sm md:text-base font-medium flex items-center justify-center"
+                            animate={{ 
+                              y: isActive ? [0, -2, 0] : 0,
+                              transition: { 
+                                y: { repeat: isActive ? Infinity : 0, duration: 2, repeatType: "reverse" } 
+                              }
+                            }}
+                          >
+                            <motion.span 
+                              className={isActive ? "text-white" : "text-gray-200"}
+                              animate={{ scale: isActive ? [1, 1.05, 1] : 1 }}
+                              transition={{ 
+                                duration: 2, 
+                                repeat: isActive ? Infinity : 0, 
+                                repeatType: "reverse" 
+                              }}
+                            >
+                              {section.charAt(0).toUpperCase() + section.slice(1)}
+                            </motion.span>
+
+                            {/* Underline animation effect */}
+                            <motion.div
+                              className="absolute -bottom-1 left-0 h-[2px] bg-gradient-to-r from-purple-500 to-blue-500"
+                              initial={{ width: 0 }}
+                              animate={{ width: isActive || isHovering === section ? "100%" : 0 }}
+                              transition={{ duration: 0.3 }}
+                            />
+                          </motion.div>
+                        </ScrollLink>
+                      </motion.div>
+                    );
+                  })}
+
+                  {/* Enhanced dark mode toggle */}
+                  <motion.div
+                    variants={itemVariants}
+                    className="relative"
+                  >
+                    <motion.button
+                      onClick={handleDarkModeToggle}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="relative p-2 rounded-full overflow-hidden"
+                      style={{ 
+                        background: "linear-gradient(135deg, rgb(236, 72, 153), rgb(124, 58, 237))",
+                        boxShadow: "0 0 10px rgba(236, 72, 153, 0.5)"
+                      }}
+                      transition={{
+                        duration: 0.2,
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 15
+                      }}
+                    >
+                      <motion.div
+                        className="absolute inset-0 opacity-30"
+                        animate={{ 
+                          background: [
+                            "radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.3) 0%, transparent 70%)",
+                            "radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.3) 0%, transparent 70%)"
+                          ],
+                        }}
+                        transition={{ duration: 3, repeat: Infinity, repeatType: "reverse" }}
+                      />
+                      <motion.div
+                        animate={{ rotate: darkMode ? 180 : 0 }}
+                        transition={{ duration: 0.5, type: "spring" }}
+                      >
+                        {darkMode ? 
+                          <Sun className="w-5 h-5 text-white" /> : 
+                          <Moon className="w-5 h-5 text-white" />
+                        }
+                      </motion.div>
+                    </motion.button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </motion.nav>
+
+            {/* Hero Section - Now using UltraPremiumHeroSection */}
+            <Element name="hero">
+              <UltraPremiumHeroSection isDarkMode={darkMode} />
+            </Element>
+
+            {/* About Section */}
+            <Element name="about" className="relative z-10 optimize-scroll">
+              <section id="about" className="w-full">
+                <LuxuryAboutSection />
+              </section>
+            </Element>
+
+            {/* Skills Section */}
+            <Element name="skills" className="relative z-10 optimize-scroll">
+              <section id="skills" className="w-full">
+                <OptimizedSkillsSection />
+              </section>
+            </Element>
+
+            <Element name="projects" className="optimize-scroll">
+              <EnhancedProjectSection />
+            </Element>
+
+            <Element name="contact" className="optimize-scroll">
+              <EnhancedContactSection />
+            </Element>
+
+            <footer className="py-10 px-8 bg-gray-900">
+              <div className="max-w-4xl mx-auto text-center">
+                <p className="text-gray-400 mb-4">© 2025 Kirthik Ramadoss. All rights reserved.</p>
+                <div className="flex justify-center gap-6">
+                  <a 
+                    href="https://github.com/KirthikR" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-gray-400 hover:text-pink-500 transition-colors"
+                  >
+                    <Github className="w-6 h-6" />
+                  </a>
+                  <a 
+                    href="https://www.linkedin.com/in/kirthik-r-3413a7233/" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-gray-400 hover:text-blue-500 transition-colors"
+                  >
+                    <Linkedin className="w-6 h-6" />
+                  </a>
+                  <a 
+                    href="mailto:kirthikramadoss@gmail.com" 
+                    className="text-gray-400 hover:text-green-500 transition-colors"
+                  >
+                    <Mail className="w-6 h-6" />
+                  </a>
+                </div>
+              </div>
+            </footer>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </ScrollOptimizationProvider>
   );
 }
