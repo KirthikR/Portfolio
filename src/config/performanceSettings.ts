@@ -6,7 +6,7 @@
 // Detect device performance capabilities
 const detectDeviceCapability = (): 'low' | 'medium' | 'high' => {
   // Check for low-end devices based on memory
-  if (navigator.deviceMemory && navigator.deviceMemory <= 2) return 'low';
+  if ((navigator as any).deviceMemory && (navigator as any).deviceMemory <= 2) return 'low';
   
   // Check processor cores if available
   if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) return 'low';
