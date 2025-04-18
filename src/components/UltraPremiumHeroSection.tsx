@@ -49,7 +49,6 @@ const UltraPremiumHeroSection = ({ isDarkMode }: UltraPremiumHeroSectionProps) =
   
   // Scroll progress for scroll-triggered animations
   const { scrollYProgress } = useScroll();
-  const scrollVelocity = useVelocity(scrollYProgress);
   const inView = useInView(containerRef, { amount: 0.2, once: false });
   
   // Transform values for parallax layers
@@ -518,27 +517,46 @@ const UltraPremiumHeroSection = ({ isDarkMode }: UltraPremiumHeroSectionProps) =
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 1.7 }}
           >
-            <motion.button
-              className="group relative overflow-hidden px-8 py-3 bg-white bg-opacity-5 backdrop-blur-sm border border-white border-opacity-10 rounded-full text-white font-medium hover:border-opacity-30 transition-all"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <ScrollLink
+              to="projects"
+              smooth={true}
+              duration={800}
+              offset={-80} // Adjust offset to account for fixed navigation
+              spy={true}
+              className="cursor-pointer"
             >
-              <span className="relative z-10">Explore My Work</span>
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                initial={{ scale: 0, x: "-100%" }}
-                whileHover={{ scale: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-              />
-            </motion.button>
+              <motion.button
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 text-white font-medium rounded-full shadow-lg hover:shadow-purple-500/30 flex items-center justify-center gap-2 group"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Explore My Work
+                <motion.span
+                  initial={{ x: 0 }}
+                  animate={{ x: 5 }}
+                  transition={{ repeat: Infinity, repeatType: "mirror", duration: 0.8 }}
+                >
+                  →
+                </motion.span>
+              </motion.button>
+            </ScrollLink>
             
-            <motion.button
-              className="group relative px-8 py-3 rounded-full border border-white border-opacity-20 text-white font-medium transition-all hover:bg-white hover:bg-opacity-5"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+            <ScrollLink
+              to="contact"
+              smooth={true}
+              duration={1000}
+              offset={-80} // Adjust offset to account for fixed navigation
+              spy={true}
+              className="cursor-pointer"
             >
-              <span>Contact Me</span>
-            </motion.button>
+              <motion.button
+                className="px-8 py-4 bg-transparent border-2 border-white/50 hover:border-white/80 text-white font-medium rounded-full hover:shadow-lg flex items-center justify-center gap-2 transition-all"
+                whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.1)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Contact Me
+              </motion.button>
+            </ScrollLink>
           </motion.div>
         </motion.div>
       </div>
@@ -564,20 +582,21 @@ const UltraPremiumHeroSection = ({ isDarkMode }: UltraPremiumHeroSectionProps) =
             Scroll
           </motion.p>
           <motion.div
-            className="w-10 h-14 border-2 border-gray-400 rounded-full flex items-start justify-center pt-2 group-hover:border-white transition-colors duration-300"
+            className="w-10 h-14 border-2 border-gray-400 rounded-full flex flex-col items-center justify-center group-hover:border-white transition-colors duration-300"
             whileHover={{ scale: 1.1 }}
           >
             <motion.div
-              className="w-2 h-2 bg-gray-400 rounded-full group-hover:bg-white transition-colors duration-300"
               animate={{
-                y: [0, 16, 0],
+                y: [0, 6, 0],
               }}
               transition={{
                 duration: 2,
                 repeat: Infinity,
                 ease: "easeInOut"
               }}
-            />
+            >
+              <ChevronDown className="text-gray-400 group-hover:text-white transition-colors duration-300" size={18} />
+            </motion.div>
           </motion.div>
         </ScrollLink>
       </motion.div>

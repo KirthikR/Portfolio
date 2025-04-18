@@ -40,7 +40,6 @@ export default function OptimizedFloatingBubbles({ dark = false }: BubbleProps) 
     }));
   }, [bubbleCount, quality]);
   
-  // Window size tracking removed as it was unused
   
   // Get gradient colors based on dark mode - memoized
   const getGradient = useMemo(() => (color: string, opacity: number) => {

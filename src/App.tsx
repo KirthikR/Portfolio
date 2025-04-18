@@ -1,14 +1,13 @@
 import { motion } from 'framer-motion';
 import { Link as ScrollLink, Element } from 'react-scroll';
-import { useState, useCallback, lazy, Suspense, memo, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, lazy, memo, useMemo, useRef, useEffect } from 'react';
 import { Github, Linkedin, Mail, ExternalLink, Briefcase, GraduationCap, Code, Cpu, Database, Globe, Phone, MapPin, Send, Sun, Moon } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { withPerformanceOptimizations } from './performance/withPerformanceOptimizations';
 import { ScrollOptimizationProvider } from './context/ScrollOptimizationContext';
-import OptimizedAnimation from './components/OptimizedAnimation';
 import LuxuryAboutSection from './components/LuxuryAboutSection';
-import { UltraPremiumSkillsSection } from './components/UltraPremiumSkillsSection';
+import OptimizedSkillsSection from './components/OptimizedSkillsSection';
 import { AnimatePresence, LayoutGroup, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import UltraPremiumHeroSection from './components/UltraPremiumHeroSection';
 
@@ -38,9 +37,9 @@ const experiences = [
     type: "work"
   },
   {
-    title: "Master's in Computer Science",
-    company: "Tech University",
-    period: "2017 - 2019",
+    title: "Master's in Data Science",
+    company: "University of Essex",
+    period: "2023 - 2024",
     description: "Specialized in Software Engineering",
     type: "education"
   },
@@ -215,11 +214,11 @@ const MinimalFallback = () => (
 );
 
 const EnhancedProjectSection = memo(function EnhancedProjectSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoaded, setIsLoaded] = useState<Record<string, boolean>>({});
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [visibleProjects, setVisibleProjects] = useState(projects);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState<Record<string, boolean>>({});
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const categories = useMemo(() => [
     { id: "all", name: "All Projects" },
@@ -490,7 +489,8 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     emailValid: true,
     messageValid: true,
     submitted: false,
-    submitting: false
+    submitting: false,
+    error: null as string | null
   });
 
   // Mouse position for magnetic effect on button
@@ -516,28 +516,31 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     threshold: 0.2
   });
 
-  // Contact cards data
+  // Contact cards data - updated with href links
   const contactCards = [
     {
       icon: <Phone className="w-6 h-6 text-white" />,
       title: "Phone",
-      value: "+1 (555) 123-4567",
+      value: "+447901354115",
       color: "from-blue-600 to-indigo-600",
-      delay: 0.1
+      delay: 0.1,
+      href: "tel:+447901354115", // Phone protocol link
     },
     {
       icon: <Mail className="w-6 h-6 text-white" />,
       title: "Email",
-      value: "john.doe@example.com",
+      value: "kirthikramadoss@gmail.com",
       color: "from-purple-600 to-pink-600",
-      delay: 0.2
+      delay: 0.2,
+      href: "mailto:kirthikramadoss@gmail.com", // Email protocol link
     },
     {
       icon: <MapPin className="w-6 h-6 text-white" />,
       title: "Location",
-      value: "San Francisco, CA",
+      value: "London, UK",
       color: "from-emerald-500 to-teal-500",
-      delay: 0.3
+      delay: 0.3,
+      href: "https://www.google.com/maps/place/London,+UK", // Google Maps link
     }
   ];
 
@@ -562,7 +565,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
   };
 
   // Form submission handler
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -581,30 +584,58 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     }
     
     // Show submitting state
-    setFormState(prev => ({ ...prev, submitting: true }));
+    setFormState(prev => ({ 
+      ...prev, 
+      submitting: true,
+      error: null 
+    }));
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Use Formspree to submit form - replace YOUR_FORM_ID with the ID from your Formspree form
+      const response = await fetch('https://formspree.io/f/mdkernly', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formState.name,
+          email: formState.email,
+          message: formState.message
+        }),
+      });
+      
+      if (response.ok) {
+        // Show success message
+        setFormState(prev => ({
+          ...prev,
+          submitted: true,
+          submitting: false
+        }));
+        
+        // Reset form after showing success
+        setTimeout(() => {
+          setFormState({
+            name: '',
+            email: '',
+            message: '',
+            nameValid: true,
+            emailValid: true,
+            messageValid: true,
+            submitted: false,
+            submitting: false,
+            error: null
+          });
+        }, 3000);
+      } else {
+        throw new Error('Form submission failed');
+      }
+    } catch (error) {
       setFormState(prev => ({
         ...prev,
-        submitted: true,
-        submitting: false
+        submitting: false,
+        error: "Failed to send message. Please try again or email me directly."
       }));
-      
-      // Reset form after showing success
-      setTimeout(() => {
-        setFormState({
-          name: '',
-          email: '',
-          message: '',
-          nameValid: true,
-          emailValid: true,
-          messageValid: true,
-          submitted: false,
-          submitting: false
-        });
-      }, 3000);
-    }, 1500);
+    }
   };
 
   return (
@@ -700,9 +731,10 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
             animate={inView ? "show" : "hidden"}
           >
             {contactCards.map((card, index) => (
-              <motion.div
+              <motion.a
+                href={card.href}
                 key={card.title}
-                className="relative"
+                className="relative block cursor-pointer"
                 variants={{
                   hidden: { opacity: 0, y: 20 },
                   show: { 
@@ -714,6 +746,8 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                 whileHover="hover"
                 onMouseEnter={() => setActiveCard(index)}
                 onMouseLeave={() => setActiveCard(null)}
+                target={card.title === "Location" ? "_blank" : undefined}
+                rel={card.title === "Location" ? "noopener noreferrer" : undefined}
               >
                 <motion.div
                   className={`relative flex items-start gap-4 p-6 rounded-xl transition-all duration-300 border border-white/10 backdrop-blur-sm will-change-transform
@@ -753,49 +787,14 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                       hover: { scale: 1.5, opacity: 0.2, transition: { duration: 0.8 } }
                     }}
                   />
+
+                  {/* Add visual indicator that these cards are clickable */}
+                  <div className="absolute top-2 right-2 opacity-70">
+                    <ExternalLink className="w-4 h-4 text-white opacity-50" />
+                  </div>
                 </motion.div>
-              </motion.div>
+              </motion.a>
             ))}
-            
-            {/* Social media links */}
-            <motion.div
-              className="mt-8"
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                show: { 
-                  opacity: 1, 
-                  y: 0,
-                  transition: { duration: 0.5, delay: 0.4 }
-                }
-              }}
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Connect with me</h3>
-              <div className="flex space-x-5">
-                {[
-                  { icon: <Github className="w-6 h-6" />, color: 'bg-gray-800 hover:bg-gray-700' },
-                  { icon: <Linkedin className="w-6 h-6" />, color: 'bg-blue-700 hover:bg-blue-600' },
-                  { icon: <Mail className="w-6 h-6" />, color: 'bg-red-600 hover:bg-red-500' }
-                ].map((social, index) => (
-                  <motion.a
-                    key={index}
-                    href="#"
-                    className={`flex items-center justify-center w-12 h-12 rounded-full text-white ${social.color} transition-all`}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    whileTap={{ scale: 0.95 }}
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={inView ? { opacity: 1, scale: 1 } : {}}
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 400, 
-                      damping: 15,
-                      delay: 0.6 + (index * 0.1)
-                    }}
-                  >
-                    {social.icon}
-                  </motion.a>
-                ))}
-              </div>
-            </motion.div>
           </motion.div>
           
           {/* Contact form - takes 3 columns on desktop */}
@@ -856,6 +855,20 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                     initial={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                   >
+                    {/* Error message display */}
+                    <AnimatePresence>
+                      {formState.error && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className="p-4 bg-red-500/20 border border-red-500/50 rounded-lg text-white mb-4"
+                        >
+                          <p>{formState.error}</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  
                     {/* Name input with animation */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -973,7 +986,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                     >
                       <motion.button
                         type="submit"
-                        className="relative w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-size-200 text-white font-medium py-3 px-6 rounded-lg overflow-hidden group"
+                        className="relative w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-size-200 text-white font-medium py-3 px-6 rounded-lg overflow-hidden group disabled:opacity-70"
                         style={{
                           backgroundSize: '300% auto',
                           backgroundPosition: '0% center',
@@ -1116,7 +1129,7 @@ function App() {
         {/* Skills Section */}
         <Element name="skills" className="relative z-10 optimize-scroll">
           <section id="skills" className="w-full">
-            <UltraPremiumSkillsSection />
+            <OptimizedSkillsSection />
           </section>
         </Element>
 
@@ -1130,15 +1143,28 @@ function App() {
 
         <footer className="py-10 px-8 bg-gray-900">
           <div className="max-w-4xl mx-auto text-center">
-            <p className="text-gray-400 mb-4">© 2023 Kirthik Ramadoss. All rights reserved.</p>
+            <p className="text-gray-400 mb-4">© 2025 Kirthik Ramadoss. All rights reserved.</p>
             <div className="flex justify-center gap-6">
-              <a href="#" className="text-gray-400 hover:text-pink-500 transition-colors">
+              <a 
+                href="https://github.com/KirthikR" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-400 hover:text-pink-500 transition-colors"
+              >
                 <Github className="w-6 h-6" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-blue-500 transition-colors">
+              <a 
+                href="https://www.linkedin.com/in/kirthik-r-3413a7233/" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-gray-400 hover:text-blue-500 transition-colors"
+              >
                 <Linkedin className="w-6 h-6" />
               </a>
-              <a href="#" className="text-gray-400 hover:text-green-500 transition-colors">
+              <a 
+                href="mailto:kirthikramadoss@gmail.com" 
+                className="text-gray-400 hover:text-green-500 transition-colors"
+              >
                 <Mail className="w-6 h-6" />
               </a>
             </div>

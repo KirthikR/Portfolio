@@ -1,0 +1,35 @@
+/* Performance optimizations for animations and transitions */
+
+/* Use hardware acceleration for certain elements */
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Optimize animations by using transform and opacity */
+.animate-optimized {
+  transition-property: transform, opacity;
+  transition-timing-function: ease-out;
+  transition-duration: 300ms;
+}
+
+/* Reduce layout thrashing by fixing size for animated elements */
+.fixed-size-animation {
+  contain: layout;
+}
+
+/* Helper class to reduce motion for users with preferences set */
+@media (prefers-reduced-motion: reduce) {
+  .reduce-motion {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Prevent text scaling in landscape while allowing user zoom */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}

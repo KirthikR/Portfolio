@@ -1,13 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.tsx';
+import App from './App.tsx'; // Changed from { App }
 import './index.css';
-import { ScrollOptimizationProvider } from './context/ScrollOptimizationContext';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ScrollOptimizationProvider>
-      <App />
-    </ScrollOptimizationProvider>
+    <App />
   </React.StrictMode>,
 );

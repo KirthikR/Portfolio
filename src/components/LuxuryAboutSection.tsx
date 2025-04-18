@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, useInView, useAnimation, AnimatePresence } from 'framer-motion';
 import { MapPin, Calendar, Briefcase, GraduationCap, Award, Book, Code, Coffee } from 'lucide-react';
+import TypewriterText from './TypewriterText';
+import LuxuryDownloadButton from './LuxuryDownloadButton';
 
 interface TimelineEvent {
   year: string;
@@ -23,58 +25,101 @@ export default function LuxuryAboutSection() {
   const [activeTab, setActiveTab] = useState<'bio' | 'timeline' | 'personal'>('bio');
   const [hoverPoint, setHoverPoint] = useState({ x: 0, y: 0 });
   const [isMobile, setIsMobile] = useState(false);
-  
+
+  // Track if the bio tab has ever been visited
+  const [bioTabVisited, setBioTabVisited] = useState(false);
+
+  // Create individual refs for each paragraph
+  const paragraph1Ref = useRef<HTMLDivElement>(null);
+  const paragraph2Ref = useRef<HTMLDivElement>(null);
+  const paragraph3Ref = useRef<HTMLDivElement>(null);
+
+  // Set up useInView hooks for each paragraph with lower threshold to ensure detection
+  const isParagraph1InView = useInView(paragraph1Ref, { once: false, amount: 0.5 });
+  const isParagraph2InView = useInView(paragraph2Ref, { once: false, amount: 0.5 });
+  const isParagraph3InView = useInView(paragraph3Ref, { once: false, amount: 0.5 });
+
+  // Keep track of animation state for paragraphs - these will be persistent
+  const [paragraph1Animated, setParagraph1Animated] = useState(false);
+  const [paragraph2Animated, setParagraph2Animated] = useState(false);
+  const [paragraph3Animated, setParagraph3Animated] = useState(false);
+
+  // Update bioTabVisited whenever the bio tab is active
+  useEffect(() => {
+    if (activeTab === 'bio' && !bioTabVisited) {
+      setBioTabVisited(true);
+    }
+  }, [activeTab, bioTabVisited]);
+
+  // Monitor when paragraphs are in view and set their animated state
+  useEffect(() => {
+    if (isParagraph1InView) setParagraph1Animated(true);
+  }, [isParagraph1InView]);
+
+  useEffect(() => {
+    if (isParagraph2InView) setParagraph2Animated(true);
+  }, [isParagraph2InView]);
+
+  useEffect(() => {
+    if (isParagraph3InView) setParagraph3Animated(true);
+  }, [isParagraph3InView]);
+
+  // Paragraph content for typewriter effect
+  const paragraph1Text = "With over 3 years of experience in software engineering, I've cultivated expertise in building sophisticated, scalable web applications that prioritize both technical excellence and user experience.";
+  const paragraph2Text = "My approach combines innovative problem-solving with meticulous attention to detail, allowing me to architect solutions that not only meet technical requirements but exceed client expectations.";
+  const paragraph3Text = "I'm passionate about leveraging cutting-edge technologies to create digital experiences that are both beautiful and functional, with a particular focus on React, TypeScript, and cloud architecture.";
+
   // Detect mobile devices
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   // Timeline data
   const timelineEvents: TimelineEvent[] = [
     {
-      year: '2022',
-      title: 'Senior Software Engineer',
-      description: 'Led development of enterprise applications using React and Node.js at Tech Corp.',
+      year: '2025',
+      title: 'Front End Developer',
+      description: 'Led development of enterprise applications using React and Node.js at Nxvoy.',
       icon: <Briefcase className="w-5 h-5" />,
       category: 'experience'
     },
     {
       year: '2020',
-      title: 'Full Stack Developer',
-      description: 'Developed and maintained multiple client projects at Digital Solutions Inc.',
+      title: 'Junior Software Engineer',
+      description: 'Developed and maintained multiple client projects at DLK Technology.',
       icon: <Code className="w-5 h-5" />,
       category: 'experience'
     },
     {
-      year: '2019',
-      title: 'Master\'s in Computer Science',
-      description: 'Specialized in Software Engineering at Tech University.',
+      year: '2023',
+      title: 'Master\'s in Data Science',
+      description: 'Specialized in Software Engineering at University of Essex.',
       icon: <GraduationCap className="w-5 h-5" />,
       category: 'education'
     },
     {
-      year: '2018',
+      year: '2019',
       title: 'Excellence in Development Award',
       description: 'Recognized for outstanding contributions to open source projects.',
       icon: <Award className="w-5 h-5" />,
       category: 'award'
     }
   ];
-  
+
   // Personal details
   const personalDetails = [
-    { icon: <Calendar className="w-5 h-5" />, label: "Birthday", value: "May 15, 1995" },
-    { icon: <MapPin className="w-5 h-5" />, label: "Location", value: "San Francisco, CA" },
-    { icon: <Book className="w-5 h-5" />, label: "Languages", value: "English, Tamil, Hindi" },
+    { icon: <Calendar className="w-5 h-5" />, label: "Birthday", value: "Dec 02, 2000" },
+    { icon: <MapPin className="w-5 h-5" />, label: "Location", value: "London, United Kingdom" },
+    { icon: <Book className="w-5 h-5" />, label: "Languages", value: "English, Tamil, Kannada" },
     { icon: <Coffee className="w-5 h-5" />, label: "Interests", value: "Photography, Swimming, Chess" },
   ];
-  
+
   // Skills data
   const skills: Skill[] = [
     { name: "JavaScript", level: 92, category: "Frontend" },
@@ -85,25 +130,41 @@ export default function LuxuryAboutSection() {
     { name: "AWS", level: 80, category: "DevOps" },
     { name: "UI/UX Design", level: 75, category: "Design" }
   ];
-  
+
   // Trigger animations when in view
   useEffect(() => {
     if (isInView) {
       controls.start('visible');
     }
   }, [isInView, controls]);
-  
+
   // Handle mouse movement for lighting effect
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!containerRef.current || isMobile) return;
-    
+
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    
+
     setHoverPoint({ x, y });
   };
-  
+
+  // Tab change handler - ensures proper state management during tab changes
+  const handleTabChange = (tabId: 'bio' | 'timeline' | 'personal') => {
+    setActiveTab(tabId);
+
+    // If switching to bio tab and it's been visited before,
+    // ensure the paragraphs maintain their animated state
+    if (tabId === 'bio' && bioTabVisited) {
+      // Short delay to ensure component is mounted before animation starts
+      setTimeout(() => {
+        if (!paragraph1Animated) setParagraph1Animated(true);
+        if (!paragraph2Animated) setParagraph2Animated(true);
+        if (!paragraph3Animated) setParagraph3Animated(true);
+      }, 50);
+    }
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -252,7 +313,7 @@ export default function LuxuryAboutSection() {
                   ].map((tab) => (
                     <motion.button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
+                      onClick={() => handleTabChange(tab.id as any)}
                       className={`px-4 py-3 rounded-lg text-left transition-all ${
                         activeTab === tab.id
                           ? 'bg-gradient-to-r from-indigo-900/50 to-purple-900/50 text-white shadow-lg'
@@ -266,6 +327,14 @@ export default function LuxuryAboutSection() {
                       <span className="font-medium">{tab.label}</span>
                     </motion.button>
                   ))}
+                </div>
+                
+                {/* Add Download CV button below tabs */}
+                <div className="mt-6">
+                  <LuxuryDownloadButton 
+                    cvUrl="/KIRTHIK R84.pdf" 
+                    className="w-full"
+                  />
                 </div>
               </div>
             </div>
@@ -287,35 +356,38 @@ export default function LuxuryAboutSection() {
                     </h3>
                     
                     <div className="space-y-4 text-gray-300">
-                      <motion.p 
-                        className="leading-relaxed"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                      >
-                        With over 5 years of experience in software engineering, I've cultivated expertise in building sophisticated, 
-                        scalable web applications that prioritize both technical excellence and user experience.
-                      </motion.p>
+                      <div ref={paragraph1Ref} className="min-h-[24px]">
+                        <TypewriterText 
+                          text={paragraph1Text}
+                          className="leading-relaxed"
+                          speed={100}
+                          shouldStart={isParagraph1InView || paragraph1Animated} 
+                          startDelay={100}
+                          forceDisplay={bioTabVisited && paragraph1Animated}
+                        />
+                      </div>
                       
-                      <motion.p 
-                        className="leading-relaxed"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                      >
-                        My approach combines innovative problem-solving with meticulous attention to detail, 
-                        allowing me to architect solutions that not only meet technical requirements but exceed client expectations.
-                      </motion.p>
+                      <div ref={paragraph2Ref} className="min-h-[24px]">
+                        <TypewriterText 
+                          text={paragraph2Text}
+                          className="leading-relaxed"
+                          speed={100}
+                          shouldStart={isParagraph2InView || paragraph2Animated}
+                          startDelay={200}
+                          forceDisplay={bioTabVisited && paragraph2Animated}
+                        />
+                      </div>
                       
-                      <motion.p 
-                        className="leading-relaxed"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.5 }}
-                      >
-                        I'm passionate about leveraging cutting-edge technologies to create digital experiences that 
-                        are both beautiful and functional, with a particular focus on React, TypeScript, and cloud architecture.
-                      </motion.p>
+                      <div ref={paragraph3Ref} className="min-h-[24px]">
+                        <TypewriterText 
+                          text={paragraph3Text}
+                          className="leading-relaxed"
+                          speed={100}
+                          shouldStart={isParagraph3InView || paragraph3Animated}
+                          startDelay={300}
+                          forceDisplay={bioTabVisited && paragraph3Animated}
+                        />
+                      </div>
                       
                       <motion.div
                         className="pt-6"
