@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Award } from 'lucide-react';
 
@@ -28,14 +28,14 @@ interface VirtualizedSkillMasonryProps {
   currentCategory?: CategoryData;
 }
 
-const VirtualizedSkillMasonry: React.FC<VirtualizedSkillMasonryProps> = ({
+const VirtualizedSkillMasonry = memo(function VirtualizedSkillMasonry({
   skills,
   selectedSkill,
   hoveredSkill,
   setSelectedSkill,
   setHoveredSkill,
   currentCategory
-}) => {
+}: VirtualizedSkillMasonryProps) {
   // Helper function to distribute skills into columns for masonry layout
   const distributeSkills = () => {
     const columns: SkillData[][] = [[], [], []];
@@ -129,6 +129,6 @@ const VirtualizedSkillMasonry: React.FC<VirtualizedSkillMasonryProps> = ({
       ))}
     </div>
   );
-};
+});
 
 export default VirtualizedSkillMasonry;
