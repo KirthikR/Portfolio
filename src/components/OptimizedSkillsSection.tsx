@@ -701,25 +701,25 @@ const OptimizedSkillsSection: React.FC = () => {
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <AnimatedCounter 
-                value={8} 
+                value={3} 
                 label="Years Experience" 
                 icon={<Briefcase className="w-6 h-6" />} 
                 delay={0} 
               />
               <AnimatedCounter 
-                value={75} 
+                value={10} 
                 label="Projects" 
                 icon={<Code className="w-6 h-6" />} 
                 delay={100} 
               />
               <AnimatedCounter 
-                value={12} 
+                value={8} 
                 label="Technologies" 
                 icon={<Star className="w-6 h-6" />} 
                 delay={200} 
               />
               <AnimatedCounter 
-                value={24} 
+                value={5} 
                 label="Happy Clients" 
                 icon={<Award className="w-6 h-6" />} 
                 delay={300} 

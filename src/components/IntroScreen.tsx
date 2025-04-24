@@ -616,7 +616,7 @@ const IntroScreen = ({ onComplete, onDecline }: IntroScreenProps) => {
                     transition={{ duration: 4, repeat: Infinity }}
                   />
                   <p className="text-purple-300 font-light italic text-sm">
-                    "Creativity is intelligence having fun." — Albert Einstein
+                    "Creativity is intelligence having fun." — Kirthik Ramadoss
                   </p>
                 </motion.div>
               </motion.div>

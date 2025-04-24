@@ -935,25 +935,25 @@ const UltraPremiumSkillsSection: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               <AnimatedCounter 
-                value={8} 
+                value={3} 
                 label="Years Experience" 
                 icon={<Briefcase className="w-8 h-8" />} 
                 delay={0} 
               />
               <AnimatedCounter 
-                value={75} 
+                value={10} 
                 label="Projects Completed" 
                 icon={<Code className="w-8 h-8" />} 
                 delay={200} 
               />
               <AnimatedCounter 
-                value={12} 
+                value={8} 
                 label="Technologies Mastered" 
                 icon={<Star className="w-8 h-8" />} 
                 delay={400} 
               />
               <AnimatedCounter 
-                value={24} 
+                value={5} 
                 label="Client Satisfaction" 
                 icon={<Award className="w-8 h-8" />} 
                 delay={600} 

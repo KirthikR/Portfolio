@@ -56,39 +56,39 @@ const skills = [
 const projects = [
   {
     id: "proj1",
-    title: "E-commerce Platform",
-    description: "Built a full-stack e-commerce platform using React, Node.js, and MongoDB",
-    image: "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&q=80&w=800",
+    title: "Flight Booking Website",
+    description: "Built a full-stack Flightbooking platform using React, Node.js, Javascript and API Integration ",
+    image: "https://images.unsplash.com/photo-1499063078284-f78f7d89616a?auto=format&fit=crop&q=80&w=1200",
     link: "#",
-    github: "https://github.com/yourusername/ecommerce",
+    github: "https://github.com/KirthikR/Skyjourney_app",
     category: "fullstack",
     technologies: ["React", "Node.js", "MongoDB", "Express"]
   },
   {
     id: "proj2",
-    title: "AI Chat Application",
-    description: "Developed a real-time chat application with AI integration",
-    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&q=80&w=800",
+    title: "Data Visualization And Analysis",
+    description: "Created a data visualization and analysis using python and plotly",
+    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1200",
     link: "#",
-    github: "https://github.com/yourusername/ai-chat",
+    github: "https://github.com/KirthikR/MA304-DATA-VISUALISATION-ASSIGNMENT",
     category: "frontend",
-    technologies: ["React", "WebSocket", "AI API", "TailwindCSS"]
+    technologies: ["Python", "Pandas", "Plotly", "Matplotlib", "Seaborn", "Numpy", "Sckit_learn"]
   },
   {
     id: "proj3",
-    title: "Data Visualization Dashboard",
-    description: "Interactive dashboard for big data visualization with real-time updates",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=800",
+    title: "Heart Disease prediction",
+    description: "created a heart disease prediction model using python and machine learning",
+    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=1200",
     link: "#",
-    github: "https://github.com/yourusername/data-viz",
+    github: "https://github.com/KirthikR/Heart-disease-prediction-using-combined-ML-and-DL-models",
     category: "data",
-    technologies: ["D3.js", "React", "Python", "PostgreSQL"]
+    technologies: ["python", "Machine Learning", "Pandas", "Numpy", "Tensorflow"]
   },
   {
     id: "proj4",
     title: "Mobile Fitness App",
     description: "Cross-platform mobile application for fitness tracking and meal planning",
-    image: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&q=80&w=800",
+    image: "https://images.unsplash.com/photo-1605296867724-fa87a8ef53fd?auto=format&fit=crop&q=80&w=1200",
     link: "#",
     github: "https://github.com/yourusername/fitness-app",
     category: "mobile",
@@ -319,7 +319,7 @@ const EnhancedProjectSection = memo(function EnhancedProjectSection() {
               layout 
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 will-change-transform"
             >
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync">
                 {visibleProjects.map((project, index) => (
                   <motion.div
                     layout
@@ -489,11 +489,18 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     nameValid: true,
     emailValid: true,
     messageValid: true,
+    nameError: '',
+    emailError: '',
+    messageError: '',
     submitted: false,
     submitting: false,
     error: null as string | null
   });
-
+  
+  // Debounce validation to avoid excessive checks while typing
+  const [debouncedName] = useState(formState.name);
+  const [debouncedEmail] = useState(formState.email);
+  
   // Mouse position for magnetic effect on button
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -516,7 +523,45 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     triggerOnce: false,
     threshold: 0.2
   });
-
+  
+  // Validate name with specific error message
+  const validateName = useCallback((name: string) => {
+    if (name.trim() === '') {
+      return { valid: false, error: 'Please enter your name' };
+    }
+    if (name.trim().length < 2) {
+      return { valid: false, error: 'Name is too short' };
+    }
+    // Basic name validation - checks if name looks legitimate
+    if (!/^[a-zA-Z]+(([',. -][a-zA-Z ])?[a-zA-Z]*)*$/.test(name.trim())) {
+      return { valid: false, error: 'Please enter a valid name' };
+    }
+    return { valid: true, error: '' };
+  }, []);
+  
+  // Validate email with specific error message
+  const validateEmail = useCallback((email: string) => {
+    if (email.trim() === '') {
+      return { valid: false, error: 'Please enter your email address' };
+    }
+    // More comprehensive email validation pattern
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return { valid: false, error: 'Please enter a valid email address' };
+    }
+    return { valid: true, error: '' };
+  }, []);
+  
+  // Validate message with specific error message
+  const validateMessage = useCallback((message: string) => {
+    if (message.trim() === '') {
+      return { valid: false, error: 'Please enter your message' };
+    }
+    if (message.trim().length < 10) {
+      return { valid: false, error: 'Your message is too short. Please provide more details.' };
+    }
+    return { valid: true, error: '' };
+  }, []);
+  
   // Contact cards data - updated with href links
   const contactCards = [
     {
@@ -545,10 +590,102 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
     }
   ];
 
-  // Handle form input changes
+  // Effect for debounced validation while typing
+  useEffect(() => {
+    if (formState.name !== debouncedName && formState.name.trim() !== '') {
+      const { valid, error } = validateName(formState.name);
+      setFormState(prev => ({ 
+        ...prev, 
+        nameValid: valid,
+        nameError: error 
+      }));
+    }
+  }, [formState.name, debouncedName, validateName]);
+  
+  useEffect(() => {
+    if (formState.email !== debouncedEmail && formState.email.trim() !== '') {
+      const { valid, error } = validateEmail(formState.email);
+      setFormState(prev => ({ 
+        ...prev, 
+        emailValid: valid,
+        emailError: error 
+      }));
+    }
+  }, [formState.email, debouncedEmail, validateEmail]);
+
+  // Handle form input changes with inline validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Update state with new value
     setFormState(prev => ({ ...prev, [name]: value }));
+    
+    // Validate field if user has started typing
+    if (value.trim() !== '') {
+      if (name === 'name') {
+        const { valid, error } = validateName(value);
+        setFormState(prev => ({ 
+          ...prev, 
+          [name]: value,
+          nameValid: valid, 
+          nameError: error 
+        }));
+      } else if (name === 'email') {
+        const { valid, error } = validateEmail(value);
+        setFormState(prev => ({ 
+          ...prev, 
+          [name]: value,
+          emailValid: valid, 
+          emailError: error 
+        }));
+      } else if (name === 'message') {
+        const { valid, error } = validateMessage(value);
+        setFormState(prev => ({ 
+          ...prev, 
+          [name]: value,
+          messageValid: valid, 
+          messageError: error 
+        }));
+      }
+    } else {
+      // Clear error when field is emptied
+      if (name === 'name') {
+        setFormState(prev => ({ ...prev, [name]: value, nameValid: true, nameError: '' }));
+      } else if (name === 'email') {
+        setFormState(prev => ({ ...prev, [name]: value, emailValid: true, emailError: '' }));
+      } else if (name === 'message') {
+        setFormState(prev => ({ ...prev, [name]: value, messageValid: true, messageError: '' }));
+      }
+    }
+  };
+
+  // Handle input blur for validation
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    // Always validate on blur, even if empty
+    if (name === 'name') {
+      const { valid, error } = validateName(value);
+      setFormState(prev => ({ 
+        ...prev, 
+        nameValid: valid, 
+        nameError: error 
+      }));
+    } else if (name === 'email') {
+      const { valid, error } = validateEmail(value);
+      setFormState(prev => ({ 
+        ...prev, 
+        emailValid: valid, 
+        emailError: error 
+      }));
+    } else if (name === 'message') {
+      const { valid, error } = validateMessage(value);
+      setFormState(prev => ({ 
+        ...prev, 
+        messageValid: valid, 
+        messageError: error 
+      }));
+    }
   };
 
   // Magnetic effect handlers for button
@@ -569,18 +706,24 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic validation
-    const nameValid = formState.name.length > 0;
-    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formState.email);
-    const messageValid = formState.message.length > 0;
+    // Run validations
+    const nameValidation = validateName(formState.name);
+    const emailValidation = validateEmail(formState.email);
+    const messageValidation = validateMessage(formState.message);
     
-    if (!nameValid || !emailValid || !messageValid) {
-      setFormState(prev => ({
-        ...prev,
-        nameValid,
-        emailValid,
-        messageValid
-      }));
+    // Update validation states
+    setFormState(prev => ({
+      ...prev,
+      nameValid: nameValidation.valid,
+      emailValid: emailValidation.valid,
+      messageValid: messageValidation.valid,
+      nameError: nameValidation.error,
+      emailError: emailValidation.error,
+      messageError: messageValidation.error
+    }));
+    
+    // Stop submission if any validation fails
+    if (!nameValidation.valid || !emailValidation.valid || !messageValidation.valid) {
       return;
     }
     
@@ -622,6 +765,9 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
             nameValid: true,
             emailValid: true,
             messageValid: true,
+            nameError: '',
+            emailError: '',
+            messageError: '',
             submitted: false,
             submitting: false,
             error: null
@@ -808,7 +954,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
             <div className="p-8">
               <h3 className="text-2xl font-bold text-white mb-6">Send a Message</h3>
               
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="sync">
                 {formState.submitted ? (
                   <motion.div
                     key="success"
@@ -870,7 +1016,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                       )}
                     </AnimatePresence>
                   
-                    {/* Name input with animation */}
+                    {/* Name input with animation and validation feedback */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -883,30 +1029,50 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                           name="name"
                           value={formState.name}
                           onChange={handleInputChange}
+                          onBlur={handleInputBlur}
                           className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300
                             bg-white/5 border ${
                               !formState.nameValid 
                                 ? 'border-red-500 focus:border-red-500' 
-                                : 'border-white/10 focus:border-blue-500'
+                                : formState.name.trim() !== '' 
+                                  ? 'border-green-500 focus:border-green-500'
+                                  : 'border-white/10 focus:border-blue-500'
                             } text-white placeholder-gray-400`}
                           placeholder="John Doe"
                         />
-                        <AnimatePresence>
-                          {!formState.nameValid && (
+                        <AnimatePresence mode="popLayout">
+                          {!formState.nameValid && formState.nameError && (
                             <motion.p
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="text-red-500 text-sm mt-1"
+                              transition={{ duration: 0.2 }}
+                              className="text-red-400 text-sm mt-1 ml-1"
                             >
-                              Please enter your name
+                              {formState.nameError}
                             </motion.p>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Success check icon for valid input */}
+                        <AnimatePresence>
+                          {formState.nameValid && formState.name.trim() !== '' && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              exit={{ scale: 0 }}
+                              className="absolute right-3 top-3"
+                            >
+                              <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
                     </motion.div>
                     
-                    {/* Email input with animation */}
+                    {/* Email input with animation and validation feedback */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -919,30 +1085,50 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                           name="email"
                           value={formState.email}
                           onChange={handleInputChange}
+                          onBlur={handleInputBlur}
                           className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300
                             bg-white/5 border ${
                               !formState.emailValid 
                                 ? 'border-red-500 focus:border-red-500' 
-                                : 'border-white/10 focus:border-blue-500'
+                                : formState.email.trim() !== '' 
+                                  ? 'border-green-500 focus:border-green-500'
+                                  : 'border-white/10 focus:border-blue-500'
                             } text-white placeholder-gray-400`}
                           placeholder="john@example.com"
                         />
-                        <AnimatePresence>
-                          {!formState.emailValid && (
+                        <AnimatePresence mode="popLayout">
+                          {!formState.emailValid && formState.emailError && (
                             <motion.p
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="text-red-500 text-sm mt-1"
+                              transition={{ duration: 0.2 }}
+                              className="text-red-400 text-sm mt-1 ml-1"
                             >
-                              Please enter a valid email
+                              {formState.emailError}
                             </motion.p>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Success check icon for valid input */}
+                        <AnimatePresence>
+                          {formState.emailValid && formState.email.trim() !== '' && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              exit={{ scale: 0 }}
+                              className="absolute right-3 top-3"
+                            >
+                              <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
                     </motion.div>
                     
-                    {/* Message input with animation */}
+                    {/* Message input with animation and validation feedback */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -954,25 +1140,45 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                           name="message"
                           value={formState.message}
                           onChange={handleInputChange}
+                          onBlur={handleInputBlur}
                           rows={4}
                           className={`w-full px-4 py-3 rounded-lg focus:outline-none transition-all duration-300
                             bg-white/5 border ${
                               !formState.messageValid 
                                 ? 'border-red-500 focus:border-red-500' 
-                                : 'border-white/10 focus:border-blue-500'
+                                : formState.message.trim() !== '' 
+                                  ? 'border-green-500 focus:border-green-500'
+                                  : 'border-white/10 focus:border-blue-500'
                             } text-white placeholder-gray-400 resize-none`}
                           placeholder="Your message here..."
                         ></textarea>
-                        <AnimatePresence>
-                          {!formState.messageValid && (
+                        <AnimatePresence mode="popLayout">
+                          {!formState.messageValid && formState.messageError && (
                             <motion.p
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
-                              className="text-red-500 text-sm mt-1"
+                              transition={{ duration: 0.2 }}
+                              className="text-red-400 text-sm mt-1 ml-1"
                             >
-                              Please enter your message
+                              {formState.messageError}
                             </motion.p>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Success check icon for valid input */}
+                        <AnimatePresence>
+                          {formState.messageValid && formState.message.trim() !== '' && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              exit={{ scale: 0 }}
+                              className="absolute right-3 top-3"
+                            >
+                              <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </motion.div>
                           )}
                         </AnimatePresence>
                       </div>
@@ -1005,7 +1211,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                         disabled={formState.submitting}
                       >
                         <div className="relative flex items-center justify-center">
-                          <AnimatePresence mode="wait">
+                          <AnimatePresence mode="sync">
                             {formState.submitting ? (
                               <motion.div
                                 key="spinner"
@@ -1277,7 +1483,7 @@ function App() {
                     {/* Subtle line animation under logo */}
                     <motion.div
                       className="h-0.5 w-full bg-gradient-to-r from-transparent via-purple-500 to-transparent absolute bottom-0 left-0"
-                      initial={{ scaleX: 0, opacity: 0 }}
+                      initial={{ width: 0 }}
                       animate={{ 
                         scaleX: [0, 1, 0], 
                         opacity: [0, 0.8, 0],
