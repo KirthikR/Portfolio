@@ -84,29 +84,29 @@ export default function LuxuryAboutSection() {
   const timelineEvents: TimelineEvent[] = [
     {
       year: '2025',
-      title: 'Front End Developer',
-      description: 'Led development of enterprise applications using React and Node.js at Nxvoy.',
+      title: 'Front End Developer/Data Analyst',
+      description: 'Led development of enterprise applications using Data Analysis,PoweBI,Data cleaning,Javascript,React and Node.js at Nxvoy.',
       icon: <Briefcase className="w-5 h-5" />,
       category: 'experience'
     },
     {
+      year: '2024',
+      title: 'Master\'s in Data Science',
+      description: 'Graduated with Merit form University of Essex.',
+      icon: <GraduationCap className="w-5 h-5" />,
+      category: 'education'
+    },
+    {
       year: '2020',
-      title: 'Junior Software Engineer',
+      title: 'Data Analyst',
       description: 'Developed and maintained multiple client projects at DLK Technology.',
       icon: <Code className="w-5 h-5" />,
       category: 'experience'
     },
     {
-      year: '2023',
-      title: 'Master\'s in Data Science',
-      description: 'Specialized in Software Engineering at University of Essex.',
-      icon: <GraduationCap className="w-5 h-5" />,
-      category: 'education'
-    },
-    {
-      year: '2019',
-      title: 'Excellence in Development Award',
-      description: 'Recognized for outstanding contributions to open source projects.',
+      year: '2015',
+      title: 'Plantinum Abacus Award',
+      description: 'Awarded for excellence in mathematics and problem solving skills',
       icon: <Award className="w-5 h-5" />,
       category: 'award'
     }
@@ -332,9 +332,8 @@ export default function LuxuryAboutSection() {
                 {/* Add Download CV button below tabs */}
                 <div className="mt-6">
                   <LuxuryDownloadButton 
-                    cvUrl="/KIRTHIK R84.pdf" 
-                    className="w-full"
-                  />
+                    cvUrl="/KIRTHIK R.pdf"
+                    className="w-full" fileName={''}                  />
                 </div>
               </div>
             </div>
