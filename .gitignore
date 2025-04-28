@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+Archive.zip
+*.zip
+dist
+node_modules
