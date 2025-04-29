@@ -287,7 +287,7 @@ export default function LuxuryAboutSection() {
                   {/* Photo with parallax effect */}
                   <div className="absolute inset-[3px] bg-gray-900 rounded-lg overflow-hidden">
                     <motion.img 
-                      src="/WhatsApp Image 2025-04-17 at 2.40.52 AM.jpeg"
+                      src="/image.jpeg"
                       alt="Kirthik Ramadoss"
                       className="w-full h-full object-cover"
                       whileHover={{ scale: 1.05 }}
