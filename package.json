@@ -6,10 +6,8 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build --no-lint",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "setup": "npm install rollup-plugin-visualizer vite-plugin-pwa --save-dev"
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@react-spring/web": "^9.7.3",

@@ -134,7 +134,7 @@ const PrivacyPolicyModal: React.FC<PrivacyPolicyModalProps> = ({ isOpen, onClose
                 </p>
                 
                 <p>
-                  This policy was last updated on May 1, 2024. We may update this policy occasionally, so please check back periodically.
+                  This policy was last updated on May 1, 2025. We may update this policy occasionally, so please check back periodically.
                 </p>
               </motion.section>
               
