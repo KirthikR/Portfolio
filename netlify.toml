@@ -17,3 +17,8 @@
   [headers.values]
     Content-Type = "application/pdf"
     Content-Disposition = "attachment; filename=KirthikR.pdf"
+
+[[headers]]
+  for = "*.jpeg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
