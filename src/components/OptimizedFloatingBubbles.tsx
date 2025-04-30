@@ -12,16 +12,6 @@ interface Bubble {
   delay: number;
 };
 
-interface OptimizedFloatingBubblesProps {
-  count?: number;
-  colors?: string[];
-  minSize?: number;
-  maxSize?: number;
-  minOpacity?: number;
-  maxOpacity?: number;
-  minSpeed?: number;
-  maxSpeed?: number;
-}
 
 const OptimizedFloatingBubbles: React.FC = () => {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);

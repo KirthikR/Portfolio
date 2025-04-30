@@ -11,10 +11,35 @@ const LuxuryDownloadButton: React.FC<LuxuryDownloadButtonProps> = ({
   fileName,
   className = ''
 }) => {
+  const handleDownload = () => {
+    // Try to fetch the CV first
+    fetch(cvUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('CV not found');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        // Create download link and trigger it
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Error downloading CV:', error);
+        // Show error message to user
+        alert('Could not download CV. Please try again later.');
+      });
+  };
+
   return (
-    <a
-      href={cvUrl}
-      download={fileName}
+    <button
+      onClick={handleDownload}
       className={`bg-gradient-to-r from-purple-600 to-blue-500 hover:from-purple-700 hover:to-blue-600 
                   text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 
                   transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center ${className}`}
@@ -34,7 +59,7 @@ const LuxuryDownloadButton: React.FC<LuxuryDownloadButtonProps> = ({
           d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
         />
       </svg>
-    </a>
+    </button>
   );
 };
 

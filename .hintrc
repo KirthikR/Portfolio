@@ -14,7 +14,8 @@
       "default",
       {
         "ignore": [
-          "text-size-adjust"
+          "text-size-adjust",
+          "-webkit-text-size-adjust"
         ]
       }
     ]
