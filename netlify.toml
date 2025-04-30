@@ -9,5 +9,11 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  NETLIFY_NEXT_PLUGIN_SKIP = true
-  NETLIFY_USE_NEXTJS = false
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  NETLIFY_USE_NEXTJS = "false"
+
+[[headers]]
+  for = "*.pdf"
+  [headers.values]
+    Content-Type = "application/pdf"
+    Content-Disposition = "attachment; filename=KirthikR.pdf"
