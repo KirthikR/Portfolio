@@ -53,10 +53,10 @@ npm run build
 npm run preview
 
 # 📞 Contact
-# Feel free to reach out if you have any questions or feedback!
+ Feel free to reach out if you have any questions or feedback!
 
-# Email: kirthikramadoss@gmail.com
-# LinkedIn: https://www.linkedin.com/in/kirthik-r-3413a7233/
-# GitHub: [KirthikR](https://github.com/KirthikR)
+ Email: kirthikramadoss@gmail.com
+ LinkedIn: https://www.linkedin.com/in/kirthik-r-3413a7233/
+ GitHub: [KirthikR](https://github.com/KirthikR)
 
-# Designed & developed with by Kirthik Ramadoss
+ Designed & developed with by Kirthik Ramadoss
