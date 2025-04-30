@@ -333,7 +333,9 @@ export default function LuxuryAboutSection() {
                 <div className="mt-6">
                   <LuxuryDownloadButton 
                     cvUrl="/KIRTHIK R.pdf"
-                    className="w-full" fileName={''}                  />
+                    className="w-full" 
+                    fileName="KIRTHIK R.pdf"                  
+                  />
                 </div>
               </div>
             </div>

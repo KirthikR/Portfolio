@@ -3,7 +3,7 @@ import LuxuryDownloadButton from './LuxuryDownloadButton';
 
 const CVSection: React.FC = () => {
   // The URL is relative to the public folder
-  const cvUrl = '/KirthikR.pdf';
+  const cvUrl = '/kirthikr.pdf';
   
   return (
     <section className="py-10 flex flex-col items-center">
