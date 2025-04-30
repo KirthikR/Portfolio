@@ -288,6 +288,11 @@ export default function LuxuryAboutSection() {
                   <div className="absolute inset-[3px] bg-gray-900 rounded-lg overflow-hidden">
                     <motion.img 
                       src="/image.jpeg"
+                      onError={(e) => {
+                        console.log("Image failed to load, using fallback");
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MXx8dXNlciUyMHByb2ZpbGV8ZW58MHx8MHx8&w=1000&q=80";
+                      }}
                       alt="Kirthik Ramadoss"
                       className="w-full h-full object-cover"
                       whileHover={{ scale: 1.05 }}
