@@ -92,7 +92,7 @@ const projects = [
     title: "Mobile Fitness App",
     description: "Cross-platform mobile application for fitness tracking and meal planning",
     image: "https://images.unsplash.com/photo-1605296867724-fa87a8ef53fd?auto=format&fit=crop&q=80&w=1200",
-    link: "#",
+    link: "https://kirthikfitnesspro.netlify.app/",
     github: "https://github.com/KirthikR/Fitness_app",
     category: "mobile",
     technologies: ["React Native", "Firebase", "Redux", "HealthKit"]
