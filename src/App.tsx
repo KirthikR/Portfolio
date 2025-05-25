@@ -96,6 +96,16 @@ const projects = [
     github: "https://github.com/KirthikR/Fitness_app",
     category: "mobile",
     technologies: ["React Native", "Firebase", "Redux", "HealthKit"]
+  },
+ {
+  id: "proj5",
+    title: "Real-time stock market Dashboard with Forecasting",
+    description: " Developed a real-time stock market dashboard with forecasting capabilities using python,streamlit,react, and various APIs, enabling users to track stock prices, visualize trends and make infromed decisions",
+    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
+    link: "https://livestockmarket.netlify.app",
+    github: "https://github.com/KirthikR/Real-Time-Stock-Market-Dashboard-with-Forecasting",
+    category: "mobile",
+    technologies: ["react", "streamlit", "python", "APIs", "data visualizations", "forecasting", "real-time data", "tailwind.css"]
   }
 ];
 
