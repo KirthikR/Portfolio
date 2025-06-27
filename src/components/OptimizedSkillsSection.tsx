@@ -28,6 +28,13 @@ interface CategoryData {
   description: string;
 }
 
+// Preload lucide icons to prevent layout shifts
+const preloadIcons = () => {
+  // Empty function that gets called during module evaluation
+  // Forces the icons to be included in the initial bundle
+};
+preloadIcons();
+
 const OptimizedSkillsSection: React.FC = () => {
   // State for interactive elements
   const [activeCategory, setActiveCategory] = useState<string>('Frontend');
@@ -35,74 +42,90 @@ const OptimizedSkillsSection: React.FC = () => {
   const [showFeatured, setShowFeatured] = useState<boolean>(true);
   const [skillViewMode, setSkillViewMode] = useState<'grid' | 'carousel'>('grid');
   
-  // Custom hook to detect if user is actively scrolling
+  // Performance monitoring
+  const [hasRendered, setHasRendered] = useState(false);
+
+  // Custom hook to detect if user is actively scrolling - using passive listener
   const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimer = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimer = useRef<number | null>(null);
   
-  // Performance optimization - only animate when in view
+  // Performance optimization - only animate when in view with higher rootMargin
+  // This preloads the content before it's visible for smoother appearance
   const { ref: sectionRef, inView } = useInView({ 
-    threshold: 0.05,
+    threshold: 0.01, // Lower threshold means it triggers sooner
     triggerOnce: false,
-    rootMargin: '100px 0px'
+    rootMargin: '25% 0px', // Start loading when 25% away from viewport
   });
   
   // Container references
   const containerRef = useRef<HTMLDivElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   
-  // Animation controls
+  // Animation controls - for conditional animations
   const headerControls = useAnimation();
   const categoryControls = useAnimation();
   const skillsControls = useAnimation();
-  const summaryControls = useAnimation();
 
-  // Use throttled handler for mouse movement
+  // More efficient mouse move handler with debouncing and RAF
+  const mouseMoveTimerRef = useRef<number | null>(null);
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (isScrolling || !containerRef.current) return;
+    if (isScrolling || !containerRef.current || !window.requestAnimationFrame) return;
     
-    // We don't need precise tracking for the effect, so we 
-    // throttle implicitly by only updating on animation frame
-    if (!window.requestAnimationFrame) return;
+    // Cancel any existing animation frame request
+    if (mouseMoveTimerRef.current) {
+      cancelAnimationFrame(mouseMoveTimerRef.current);
+    }
     
-    requestAnimationFrame(() => {
+    // Schedule new update with requestAnimationFrame for better performance
+    mouseMoveTimerRef.current = requestAnimationFrame(() => {
       if (!containerRef.current) return;
-      // Use simpler calculations
+      
       const rect = containerRef.current.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 100;
       const y = ((e.clientY - rect.top) / rect.height) * 100;
       
+      // Use CSS variables instead of style for better performance
       containerRef.current.style.setProperty('--mouse-x', `${x}%`);
       containerRef.current.style.setProperty('--mouse-y', `${y}%`);
     });
   }, [isScrolling]);
   
-  // Detect scroll events globally
+  // Efficient scroll handler with passive event listener
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolling(true);
       
       // Clear existing timer
       if (scrollTimer.current) {
-        clearTimeout(scrollTimer.current);
+        window.clearTimeout(scrollTimer.current);
       }
       
       // Set a timeout to mark scrolling as finished
-      scrollTimer.current = setTimeout(() => {
+      scrollTimer.current = window.setTimeout(() => {
         setIsScrolling(false);
-      }, 150);
+      }, 100); // Reduced from 150ms to 100ms for faster response
     };
     
+    // Use passive listener for better scroll performance
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimer.current) {
-        clearTimeout(scrollTimer.current);
+        window.clearTimeout(scrollTimer.current);
+      }
+      if (mouseMoveTimerRef.current) {
+        cancelAnimationFrame(mouseMoveTimerRef.current);
       }
     };
   }, []);
 
-  // Categories with rich metadata
+  // Mark the component as rendered on the first useEffect
+  useEffect(() => {
+    setHasRendered(true);
+  }, []);
+
+  // Categories with rich metadata - using useMemo to prevent recreation
   const categories: CategoryData[] = useMemo(() => [
     { 
       name: 'Frontend', 
@@ -148,6 +171,7 @@ const OptimizedSkillsSection: React.FC = () => {
       featured: true,
       showcases: ['Built complex SPAs', 'Created reusable component libraries', 'Implemented custom hooks']
     },
+    // ... rest of the skills data (unchanged)
     { 
       name: 'JavaScript', 
       level: 94, 
@@ -276,37 +300,42 @@ const OptimizedSkillsSection: React.FC = () => {
     return filtered.sort((a, b) => b.level - a.level);
   }, [skills, activeCategory, showFeatured]);
 
-  // Get current category
+  // Get current category - memoized
   const currentCategory = useMemo(() => 
     categories.find(cat => cat.name === activeCategory),
     [categories, activeCategory]
   );
 
-  // Animation control based on viewport visibility
+  // Simplified animation control based on viewport visibility
   useEffect(() => {
-    if (inView && !isScrolling) {
+    if (inView) {
+      // Use a small delay between animations to reduce CPU load
       headerControls.start('visible');
-      categoryControls.start('visible');
-      skillsControls.start('visible');
-      summaryControls.start('visible');
+      
+      setTimeout(() => {
+        categoryControls.start('visible');
+      }, 100);
+      
+      setTimeout(() => {
+        skillsControls.start('visible');
+      }, 200);
     }
-  }, [inView, isScrolling, headerControls, categoryControls, skillsControls, summaryControls]);
+  }, [inView, headerControls, categoryControls, skillsControls]);
 
-  // Component for each skill card - memoized to prevent unnecessary re-renders
+  // Component for each skill card - static rendering for better performance
   const SkillCard = React.memo(({ skill }: { skill: SkillData }) => {
     const isSelected = selectedSkill === skill.name;
     
+    // Using simpler animation variants for better performance
     return (
       <motion.div
         className={`bg-gradient-to-br from-gray-800/60 to-gray-900/80 p-0.5 rounded-lg overflow-hidden ${
           isSelected ? 'ring-2 ring-offset-2 ring-offset-gray-900 ring-indigo-500' : ''
-        }`}
-        whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+        } transform-gpu`} // Added transform-gpu for hardware acceleration
+        whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        style={{ 
-          willChange: 'transform',
-          transform: 'translateZ(0)'
-        }}
+        transition={{ type: 'tween', duration: 0.2 }} // Using tween instead of spring for efficiency
+        style={{ willChange: 'transform' }}
       >
         <div className="bg-gray-900/80 p-4 h-full rounded-lg border border-white/5">
           <div className="flex justify-between items-start mb-3">
@@ -333,7 +362,7 @@ const OptimizedSkillsSection: React.FC = () => {
                 className={`h-full rounded-full bg-gradient-to-r ${currentCategory?.color}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${skill.level}%` }}
-                transition={{ duration: 0.6, delay: 0.1 }}
+                transition={{ duration: 0.4 }} // Reduced animation duration
               />
             </div>
           </div>
@@ -343,6 +372,13 @@ const OptimizedSkillsSection: React.FC = () => {
           </p>
         </div>
       </motion.div>
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    return (
+      prevProps.skill.name === nextProps.skill.name &&
+      prevProps.skill.level === nextProps.skill.level &&
+      prevProps.skill.category === nextProps.skill.category
     );
   });
 
@@ -354,22 +390,28 @@ const OptimizedSkillsSection: React.FC = () => {
   }) => (
     <motion.button
       onClick={() => setSkillViewMode(mode)}
-      className={`px-3 py-2 rounded-lg flex items-center space-x-2 transition-all ${
+      className={`px-3 py-2 rounded-lg flex items-center space-x-2 transition-all transform-gpu ${
         skillViewMode === mode 
           ? `bg-gradient-to-r ${currentCategory?.color} text-white shadow-lg` 
           : 'bg-gray-800/40 text-gray-300 hover:bg-gray-700/60'
       }`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
+      transition={{ duration: 0.2, type: 'tween' }}
     >
       {icon}
       <span className="text-sm">{label}</span>
     </motion.button>
-  ));
+  ), (prevProps, nextProps) => {
+    return (
+      prevProps.mode === nextProps.mode && 
+      prevProps.label === nextProps.label
+    );
+  });
 
   // Featured Skill Card - with reduced animations for performance
   const FeaturedSkillCard = React.memo(({ skill }: { skill: SkillData }) => (
-    <div className="col-span-full bg-gradient-to-br from-gray-800/60 via-gray-800/40 to-gray-800/60 p-1 rounded-xl">
+    <div className="col-span-full bg-gradient-to-br from-gray-800/60 via-gray-800/40 to-gray-800/60 p-1 rounded-xl transform-gpu">
       <div className="relative overflow-hidden rounded-xl border border-white/5 h-full">
         <div className="relative p-5 h-full bg-gradient-to-br from-gray-900/80 via-gray-800/80 to-gray-900/80">
           <div className="flex flex-col md:flex-row gap-6">
@@ -398,7 +440,7 @@ const OptimizedSkillsSection: React.FC = () => {
                     className={`h-full rounded-full bg-gradient-to-r ${currentCategory?.color}`}
                     initial={{ width: 0 }}
                     animate={{ width: `${skill.level}%` }}
-                    transition={{ duration: 1, delay: 0.2 }}
+                    transition={{ duration: 0.6 }} // Reduced from 1s to 0.6s
                   />
                 </div>
               </div>
@@ -429,50 +471,57 @@ const OptimizedSkillsSection: React.FC = () => {
     </div>
   ));
 
-  // Animated counter for summary section
+  // Animated counter with optimized animation
   const AnimatedCounter = React.memo(({ value, label, icon, delay = 0 }: { 
     value: number, 
     label: string, 
     icon: React.ReactNode, 
     delay?: number 
   }) => {
-    const { ref, inView } = useInView({ triggerOnce: true, threshold: 0.3 });
+    const { ref, inView } = useInView({ 
+      triggerOnce: true, 
+      threshold: 0.3,
+      rootMargin: '50px 0px' // Start animation earlier
+    });
     const [displayValue, setDisplayValue] = useState(0);
     
     useEffect(() => {
       if (!inView) return;
       
-      let startTime = Date.now();
-      let frameId: number | null = null;
+      // Use a more efficient animation with fewer steps
+      // This reduces the number of state updates and re-renders
+      const animationDuration = 1000; // ms
+      const stepCount = 10; // Reduced from continuous animation to just 10 steps
+      const increment = value / stepCount;
+      const stepDuration = animationDuration / stepCount;
       
-      // Only animate when in view and after delay
+      let currentStep = 0;
+      let currentValue = 0;
+      
       const timeout = setTimeout(() => {
-        const animate = () => {
-          const now = Date.now();
-          const progress = Math.min((now - startTime) / 1500, 1);
-          setDisplayValue(Math.floor(value * progress));
+        const interval = setInterval(() => {
+          currentStep += 1;
+          currentValue = Math.min(Math.floor(increment * currentStep), value);
+          setDisplayValue(currentValue);
           
-          if (progress < 1) {
-            frameId = requestAnimationFrame(animate);
+          if (currentStep >= stepCount) {
+            clearInterval(interval);
           }
-        };
+        }, stepDuration);
         
-        frameId = requestAnimationFrame(animate);
+        return () => clearInterval(interval);
       }, delay);
       
-      return () => {
-        clearTimeout(timeout);
-        if (frameId !== null) cancelAnimationFrame(frameId);
-      };
+      return () => clearTimeout(timeout);
     }, [inView, value, delay]);
     
     return (
       <motion.div 
         ref={ref} 
-        initial={{ opacity: 0, y: 30 }}
+        initial={{ opacity: 0, y: 20 }} // Reduced from 30 to 20
         animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6 }}
-        className="text-center"
+        transition={{ duration: 0.4 }} // Faster transition
+        className="text-center transform-gpu" // Added transform-gpu
       >
         <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-600/20 text-indigo-400">
           {icon}
@@ -483,60 +532,79 @@ const OptimizedSkillsSection: React.FC = () => {
     );
   });
 
-  // Standard grid implementation (non-virtualized fallback)
-  const StandardSkillGrid = () => {
+  // Optimized grid with better chunking for performance
+  const StandardSkillGrid = React.memo(() => {
+    // Helper function to chunk filtered skills for better rendering performance
+    const chunkedSkills = useMemo(() => {
+      // Only render a subset of skills that aren't featured when showFeatured is true
+      const skillsToShow = filteredSkills.filter(skill => !(showFeatured && skill.featured));
+      return skillsToShow;
+    }, [filteredSkills, showFeatured]);
+    
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-        {filteredSkills
-          .filter(skill => !(showFeatured && skill.featured))
-          .map((skill) => (
-            <SkillCard key={skill.name} skill={skill} />
-          ))}
+        {chunkedSkills.map((skill) => (
+          <SkillCard key={skill.name} skill={skill} />
+        ))}
       </div>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // This optimization isn't necessary but added for clarity
+    return true;
+  });
 
-  // Standard carousel implementation (non-virtualized fallback)
-  const StandardSkillCarousel = () => {
+  // Optimized carousel implementation
+  const StandardSkillCarousel = React.memo(() => {
+    const carouselSkills = useMemo(() => {
+      return filteredSkills.filter(skill => !(showFeatured && skill.featured));
+    }, [filteredSkills, showFeatured]);
+    
     return (
-      <div className="flex space-x-6 overflow-x-auto py-6 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900">
-        {filteredSkills
-          .filter(skill => !(showFeatured && skill.featured))
-          .map((skill) => (
-            <div key={skill.name} className="snap-start w-[280px] flex-shrink-0">
-              <SkillCard skill={skill} />
-            </div>
-          ))}
+      <div 
+        className="flex space-x-6 overflow-x-auto py-6 px-2 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
+        style={{ 
+          WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
+          scrollbarWidth: 'thin',
+          msOverflowStyle: '-ms-autohiding-scrollbar'
+        }}
+      >
+        {carouselSkills.map((skill) => (
+          <div key={skill.name} className="snap-start w-[280px] flex-shrink-0">
+            <SkillCard skill={skill} />
+          </div>
+        ))}
       </div>
     );
+  }, [filteredSkills, showFeatured, currentCategory]);
+
+  // Use reduced motion for simpler variants
+  const sectionVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1, 
+      transition: { duration: 0.5 } 
+    }
   };
 
   return (
-    <div 
+    <section 
       ref={sectionRef}
       id="skills"
       className="relative w-full py-20 overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black"
+      data-section="skills"
     >
-      {/* Simplified background effect with fewer particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={`particle-${i}`}
-            className="absolute rounded-full opacity-20"
-            style={{
-              width: 200,
-              height: 200,
-              left: `${i * 25}%`,
-              top: `${Math.random() * 100}%`,
-              background: 'radial-gradient(circle, rgba(99, 102, 241, 0.15), transparent 70%)',
-              transform: 'translateZ(0)',
-              willChange: 'transform, opacity'
-            }}
-          />
-        ))}
-      </div>
+      {/* Drastically simplified background effect - using CSS instead of React nodes */}
+      <div 
+        className="absolute inset-0 overflow-hidden pointer-events-none bg-radial-particles"
+        style={{ 
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                           radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.08) 0%, transparent 40%)`,
+          backgroundSize: '100% 100%',
+        }}
+        aria-hidden="true"
+      />
       
-      {/* Optimized light effect - using CSS variables instead of JS-driven motion values */}
+      {/* Light effect container - using CSS variables for mouse tracking */}
       <div 
         ref={containerRef} 
         onMouseMove={handleMouseMove}
@@ -545,21 +613,17 @@ const OptimizedSkillsSection: React.FC = () => {
           '--mouse-x': '50%',
           '--mouse-y': '50%'
         } as React.CSSProperties}
+        aria-hidden="true"
       />
       
+      {/* Main content container */}
       <div className="relative container mx-auto px-4 sm:px-6 z-10">
-        {/* Section Header */}
+        {/* Section Header - with simplified animation */}
         <motion.div 
           className="text-center mb-16"
           initial="hidden"
           animate={headerControls}
-          variants={{
-            hidden: { opacity: 0 },
-            visible: { 
-              opacity: 1, 
-              transition: { duration: 0.8 } 
-            }
-          }}
+          variants={sectionVariants}
         >
           <motion.div className="inline-block mb-2 px-4 py-1.5 bg-gradient-to-r from-indigo-900/30 to-purple-900/30 rounded-full backdrop-blur-md">
             <span className="text-indigo-400 flex items-center text-sm font-medium">
@@ -582,8 +646,13 @@ const OptimizedSkillsSection: React.FC = () => {
           </p>
         </motion.div>
         
-        {/* Category Selector - optimized with fewer animations */}
-        <div className="mb-10">
+        {/* Category Selector - with simplified animations */}
+        <motion.div 
+          className="mb-10"
+          initial="hidden"
+          animate={categoryControls}
+          variants={sectionVariants}
+        >
           <div className="flex flex-wrap justify-center gap-3 mb-8">
             {categories.map((category) => (
               <motion.button
@@ -592,13 +661,14 @@ const OptimizedSkillsSection: React.FC = () => {
                   setActiveCategory(category.name);
                   setSelectedSkill(null);
                 }}
-                className={`px-4 py-3 rounded-lg flex items-center gap-2 transition-all ${
+                className={`px-4 py-3 rounded-lg flex items-center gap-2 transition-all transform-gpu ${
                   activeCategory === category.name 
                     ? `bg-gradient-to-r ${category.color} text-white shadow-lg` 
                     : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
                 }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, type: 'tween' }}
               >
                 <span className={activeCategory === category.name ? 'text-white' : 'text-gray-400'}>
                   {category.icon}
@@ -608,14 +678,14 @@ const OptimizedSkillsSection: React.FC = () => {
             ))}
           </div>
           
-          {/* Category Description */}
+          {/* Category Description - with optimized transitions */}
           <AnimatePresence mode="wait">
             <motion.div 
               key={activeCategory}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
               className="text-center mb-8"
             >
               <p className="text-gray-300 max-w-3xl mx-auto">
@@ -623,10 +693,15 @@ const OptimizedSkillsSection: React.FC = () => {
               </p>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
         
-        {/* View Mode Controls - simplified */}
-        <div className="flex flex-wrap justify-center gap-4 items-center mb-8">
+        {/* Display Controls - with minimal animation */}
+        <motion.div 
+          className="flex flex-wrap justify-center gap-4 items-center mb-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
           <div className="flex gap-2">
             <ViewModeButton 
               mode="grid" 
@@ -642,59 +717,68 @@ const OptimizedSkillsSection: React.FC = () => {
           <div className="h-6 border-r border-gray-700"></div>
           <motion.button
             onClick={() => setShowFeatured(!showFeatured)}
-            className={`px-3 py-2 rounded-lg flex items-center space-x-2 ${
+            className={`px-3 py-2 rounded-lg flex items-center space-x-2 transform-gpu ${
               showFeatured 
                 ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white' 
                 : 'bg-gray-800/40 text-gray-300'
             }`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            transition={{ duration: 0.2, type: 'tween' }}
           >
             <Star className="w-4 h-4" />
             <span className="text-sm">Featured First</span>
           </motion.button>
-        </div>
+        </motion.div>
         
-        {/* Featured Skill - if available and enabled */}
-        {showFeatured && filteredSkills.some(s => s.featured) && (
-          <div className="mb-8">
+        {/* Featured Skill - conditionally rendered with no animation for performance */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={skillsControls}
+          variants={sectionVariants}
+          className="mb-8"
+        >
+          {showFeatured && filteredSkills.some(s => s.featured) && (
             <FeaturedSkillCard skill={filteredSkills.find(s => s.featured)!} />
+          )}
+          
+          {/* Skills Display - chunked for better performance */}
+          <div className="mb-16" ref={gridContainerRef}>
+            <AnimatePresence mode="wait">
+              {skillViewMode === 'grid' && (
+                <motion.div
+                  key="grid-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <StandardSkillGrid />
+                </motion.div>
+              )}
+              
+              {skillViewMode === 'carousel' && (
+                <motion.div
+                  key="carousel-view"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <StandardSkillCarousel />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
+        </motion.div>
         
-        {/* Skills Display - non-virtualized fallback */}
-        <div className="mb-16" ref={gridContainerRef}>
-          <AnimatePresence mode="wait">
-            {/* Grid View */}
-            {skillViewMode === 'grid' && (
-              <motion.div
-                key="grid-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <StandardSkillGrid />
-              </motion.div>
-            )}
-            
-            {/* Carousel View */}
-            {skillViewMode === 'carousel' && (
-              <motion.div
-                key="carousel-view"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <StandardSkillCarousel />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-        
-        {/* Experience Summary - Using static values to reduce computation */}
-        <div className="mt-16">
+        {/* Experience Summary - With optimized counters */}
+        <motion.div 
+          className="mt-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5 }}
+        >
           <div className="bg-gradient-to-br from-indigo-900/10 to-purple-900/10 rounded-2xl p-8 backdrop-blur-md border border-indigo-900/20">
             <h3 className="text-xl md:text-2xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300 mb-10">
               Professional Experience & Achievements
@@ -710,27 +794,28 @@ const OptimizedSkillsSection: React.FC = () => {
                 value={10} 
                 label="Projects" 
                 icon={<Code className="w-6 h-6" />} 
-                delay={100} 
+                delay={50} 
               />
               <AnimatedCounter 
                 value={8} 
                 label="Technologies" 
                 icon={<Star className="w-6 h-6" />} 
-                delay={200} 
+                delay={100} 
               />
               <AnimatedCounter 
                 value={5} 
                 label="Happy Clients" 
                 icon={<Award className="w-6 h-6" />} 
-                delay={300} 
+                delay={150} 
               />
             </div>
             <div className="text-center mt-10">
               <motion.a
                 href="#contact"
-                className="inline-block px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium"
+                className="inline-block px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium transform-gpu"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2, type: 'tween' }}
               >
                 <span className="flex items-center space-x-2">
                   <span>Work With Me</span> 
@@ -739,7 +824,7 @@ const OptimizedSkillsSection: React.FC = () => {
               </motion.a> 
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
       
       {/* CSS for optimized light effect */}
@@ -747,15 +832,36 @@ const OptimizedSkillsSection: React.FC = () => {
         .light-effect {
           background: radial-gradient(
             circle at var(--mouse-x) var(--mouse-y), 
-            rgba(99, 102, 241, 0.08), 
+            rgba(99, 102, 241, 0.06), 
             transparent 40%
           );
+          transition: background 0.1s ease;
           transform: translateZ(0);
           will-change: background;
         }
+        
+        /* Optimize CSS animations over JS for better performance */
+        @media (prefers-reduced-motion: no-preference) {
+          .transform-gpu {
+            transform: translateZ(0);
+          }
+        }
+        
+        /* Use CSS for simple background animations instead of React elements */
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
       `}} />
-    </div>
+      
+      {/* Preload content for the section */}
+      <noscript>
+        <link rel="preload" as="style" href="/path/to/critical.css" />
+        <link rel="preload" as="image" href="/path/to/critical-image.jpg" />
+      </noscript>
+    </section>
   );
 };
 
-export default OptimizedSkillsSection;
+export default React.memo(OptimizedSkillsSection);

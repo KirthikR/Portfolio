@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import { Link as ScrollLink, Element } from 'react-scroll';
+import { motion, useScroll, useSpring, useTransform, useReducedMotion } from 'framer-motion';
+import { Link as ScrollLink, Element, Events } from 'react-scroll';
 import { useState, useCallback, lazy, memo, useMemo, useRef, useEffect } from 'react';
 import { Github, Linkedin, Mail, ExternalLink, Briefcase, GraduationCap, Code, Cpu, Database, Globe, Phone, MapPin, Send, Sun, Moon } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
@@ -11,18 +11,129 @@ import CookiesConsentBanner from './components/CookiesConsentBanner';
 import CookieSettings from './components/CookieSettings';
 import LuxuryAboutSection from './components/LuxuryAboutSection';
 import OptimizedSkillsSection from './components/OptimizedSkillsSection';
-import { AnimatePresence, LayoutGroup, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { AnimatePresence, LayoutGroup, useMotionValue } from 'framer-motion';
 import UltraPremiumHeroSection from './components/UltraPremiumHeroSection';
 import IntroScreen from './components/IntroScreen';
 
-// Lazy load heavy components with appropriate loading states
+// === PERFORMANCE OPTIMIZATIONS ===
+
+// Implement a global performance monitoring utility
+const PerformanceMonitor = {
+  frameDrops: 0,
+  lastFrameTime: 0,
+  
+  init() {
+    if (typeof window !== 'undefined') {
+      this.lastFrameTime = performance.now();
+      this.monitorFrameRate();
+    }
+  },
+  
+  monitorFrameRate() {
+    const checkFrame = () => {
+      const now = performance.now();
+      const delta = now - this.lastFrameTime;
+      
+      // Frame drop detected (assuming 60fps, so frames should be ~16.7ms)
+      if (delta > 50) { // More than 3 frames dropped
+        this.frameDrops++;
+        console.debug(`Frame drop detected: ${Math.round(delta)}ms (${this.frameDrops} total)`);
+        
+        // If too many frame drops, reduce animation complexity
+        if (this.frameDrops > 5 && window.__REDUCE_ANIMATION_COMPLEXITY !== true) {
+          console.debug('Reducing animation complexity due to performance issues');
+          window.__REDUCE_ANIMATION_COMPLEXITY = true;
+        }
+      }
+      
+      this.lastFrameTime = now;
+      requestAnimationFrame(checkFrame);
+    };
+    
+    requestAnimationFrame(checkFrame);
+  }
+};
+
+// Global variable to track if we should reduce animation complexity
+if (typeof window !== 'undefined') {
+  window.__REDUCE_ANIMATION_COMPLEXITY = false;
+}
+
+// Request idle callback polyfill
+const requestIdleCallback = 
+  typeof window !== 'undefined' 
+    ? window.requestIdleCallback || 
+      ((cb) => setTimeout(cb, 1))
+    : (cb) => setTimeout(cb, 1);
+
+// Image preloader function - preload critical images during idle time
+const preloadCriticalImages = () => {
+  if (typeof window === 'undefined') return;
+  
+  const criticalImageUrls = [
+    "https://logos-world.net/wp-content/uploads/2023/01/British-Airways-Logo.png",
+    "https://d3njjcbhbojbot.cloudfront.net/api/utilities/v1/imageproxy/https://images.ctfassets.net/wp1lcwdav1p1/6JHlaxZYPoTNb5sALLJ2lY/3d3c073c368b63a7f7645fd0a06ea4cf/BA_VEP_Thumbnail_Design.png?w=1500&h=680&q=60&fit=fill&f=faces&fm=jpg&fl=progressive&auto=format%2Ccompress&dpr=1&w=1000&h=",
+    // Add other critical images
+  ];
+  
+  requestIdleCallback(() => {
+    criticalImageUrls.forEach(url => {
+      const img = new Image();
+      img.src = url;
+    });
+  });
+};
+
+// Scroll optimization helper - creates a passive, throttled scroll handler
+const createOptimizedScrollHandler = (callback, delay = 100) => {
+  if (typeof window === 'undefined') return () => {};
+  
+  let waiting = false;
+  let lastArgs = null;
+  
+  const timeoutFunc = () => {
+    if (lastArgs) {
+      callback(...lastArgs);
+      lastArgs = null;
+      setTimeout(timeoutFunc, delay);
+    } else {
+      waiting = false;
+    }
+  };
+  
+  return (...args) => {
+    if (waiting) {
+      lastArgs = args;
+      return;
+    }
+    
+    callback(...args);
+    waiting = true;
+    setTimeout(timeoutFunc, delay);
+  };
+};
+
+// === OPTIMIZED COMPONENT IMPORTS ===
+
+// Lazy load heavy components with appropriate loading states and better chunking
 const OptimizedFloatingBubbles = lazy(() => 
   import('./components/OptimizedFloatingBubbles')
+    .then(module => {
+      // Log load complete for debugging
+      console.debug('Loaded OptimizedFloatingBubbles component');
+      return module;
+    })
 );
 
 const OptimizedProfessionalNameAnimation = lazy(() => 
   import('./components/OptimizedProfessionalNameAnimation')
+    .then(module => {
+      console.debug('Loaded OptimizedProfessionalNameAnimation component');
+      return module;
+    })
 );
+
+// === OPTIMIZED DATA HANDLING ===
 
 // Memoize static data to prevent recreating on each render
 const experiences = [
@@ -106,6 +217,16 @@ const projects = [
     github: "https://github.com/KirthikR/Real-Time-Stock-Market-Dashboard-with-Forecasting",
     category: "mobile",
     technologies: ["react", "streamlit", "python", "APIs", "data visualizations", "forecasting", "real-time data", "tailwind.css"]
+  },
+  {
+    id: "proj6",
+  title: "Healthchechup-AI Powered Health Assistant",
+  description: "Built an AI powered health assistant that provides personalized health recommendations and tracks user health data using react, node.js, and various apis, enabling users to manage their health effectively",
+  image: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80", 
+  link: "https://healthcheckupai.netlify.app/dashboard",
+  github: "https://github.com/KirthikR/Healthcheckup-AI-application",
+  category: "webapplication",
+  technologies: ["Node.js", "React", "tailwind.css", "APIs", "AI", "supabase", "Health data management", "Framer Motion", "React Three Fiber", "React Query", "Machine Learning", "Data Visualization", "Real-time Data", "Responsive Design", "Computer Vision (POC)", "REST APIs", "ChatGPT", "OpenAI", "Firebase", "Stripe"]
   }
 ];
 
@@ -226,6 +347,488 @@ const MinimalFallback = () => (
     <div className="w-12 h-12 border-t-2 border-blue-500 rounded-full animate-spin"></div>
   </div>
 );
+
+// Testimonial Card Component with futuristic design
+const TestimonialCard = memo(function TestimonialCard({ 
+  name, 
+  role, 
+  feedback, 
+  image, 
+  delay, 
+  gradient,
+  icon
+}: { 
+  name: string; 
+  role: string; 
+  feedback: string; 
+  image: string; 
+  delay: number;
+  gradient: string;
+  icon: string;
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  // Icon based on testimonial type
+  const renderIcon = useCallback(() => {
+    switch (icon) {
+      case 'tech':
+        return <Cpu className="w-5 h-5 text-white" />;
+      case 'product':
+        return <Briefcase className="w-5 h-5 text-white" />;
+      case 'data':
+        return <Database className="w-5 h-5 text-white" />;
+      case 'research':
+        return <GraduationCap className="w-5 h-5 text-white" />;
+      case 'mobile':
+        return <Globe className="w-5 h-5 text-white" />;
+      default:
+        return <Code className="w-5 h-5 text-white" />;
+    }
+  }, [icon]);
+
+  return (
+    <motion.div
+      ref={ref}
+      variants={{
+        hidden: { opacity: 0, y: 30 },
+        show: { 
+          opacity: 1, 
+          y: 0,
+          transition: { 
+            type: "spring",
+            stiffness: 100,
+            duration: 0.8, 
+            delay 
+          }
+        }
+      }}
+      className="h-full"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+    >
+      <motion.div 
+        className={`h-full relative overflow-hidden rounded-2xl backdrop-blur-sm bg-white/5 p-6 border border-white/10 flex flex-col`}
+        animate={isHovered ? { y: -8, boxShadow: '0 20px 30px -10px rgba(0,0,0,0.3)' } : {}}
+        transition={{ duration: 0.4 }}
+      >
+        {/* Animated gradient outline when hovered */}
+        <motion.div
+          className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-2xl opacity-0`}
+          animate={{ opacity: isHovered ? 0.1 : 0 }}
+          transition={{ duration: 0.3 }}
+        />
+        
+        {/* Animated corner accent */}
+        <div className="absolute -top-8 -right-8 w-24 h-24">
+          <motion.div 
+            className={`absolute inset-0 bg-gradient-to-br ${gradient} rounded-full opacity-40 blur-md`}
+            animate={{
+              scale: isHovered ? [1, 1.2, 1] : 1,
+              opacity: isHovered ? [0.3, 0.5, 0.3] : 0.3
+            }}
+            transition={{
+              duration: 2,
+              repeat: isHovered ? Infinity : 0,
+              repeatType: "reverse"
+            }}
+          />
+        </div>
+        
+        {/* Quote marks */}
+        <div className="absolute top-5 left-5 text-5xl opacity-10 leading-none font-serif text-white">"</div>
+        
+        {/* Content */}
+        <div className="flex-1">
+          {/* Testimonial text */}
+          <p className="text-gray-200 mb-6 relative z-10 leading-relaxed">
+            {feedback}
+          </p>
+        </div>
+        
+        {/* Persona */}
+        <div className="flex items-center mt-4">
+          {/* Image with animated border */}
+          <div className="relative mr-4">
+            <motion.div
+              className={`absolute -inset-0.5 rounded-full bg-gradient-to-r ${gradient} opacity-70`}
+              animate={{
+                rotate: isHovered ? 360 : 0
+              }}
+              transition={{
+                duration: 3,
+                ease: "linear",
+                repeat: isHovered ? Infinity : 0
+              }}
+            />
+            <img 
+              src={image} 
+              alt={name}
+              className="w-14 h-14 rounded-full object-cover border-2 border-black relative z-10"
+            />
+            
+            {/* Icon badge */}
+            <div className={`absolute -bottom-1 -right-1 p-1.5 rounded-full bg-gradient-to-r ${gradient} z-20 flex items-center justify-center`}>
+              {renderIcon()}
+            </div>
+          </div>
+          
+          <div>
+            <motion.h4 
+              className="font-semibold text-white text-base"
+              animate={{ 
+                color: isHovered ? "#fff" : "#f5f5f5",
+                textShadow: isHovered ? "0 0 8px rgba(255,255,255,0.3)" : "none"
+              }}
+            >
+              {name}
+            </motion.h4>
+            <p className="text-sm text-gray-400">{role}</p>
+          </div>
+        </div>
+        
+        {/* Futuristic decorative element */}
+        <motion.div
+          className="absolute bottom-3 right-3 h-8 w-12 opacity-20"
+          style={{
+            background: `linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.8) 40%, rgba(255,255,255,0.8) 60%, transparent 60%)`,
+          }}
+          animate={{ opacity: isHovered ? [0.2, 0.4, 0.2] : 0.2 }}
+          transition={{ 
+            duration: 2, 
+            repeat: isHovered ? Infinity : 0,
+            repeatType: "reverse" 
+          }}
+        />
+      </motion.div>
+    </motion.div>
+  );
+});
+
+// Add this after TestimonialCard component definition
+const CertificateCard = memo(function CertificateCard({ 
+  title, 
+  issuer, 
+  date, 
+  credentialId,
+  description,
+  image,
+  featured = false,
+  glowColor,
+  iconSet = []
+}: { 
+  title: string;
+  issuer: string;
+  date: string;
+  credentialId: string;
+  description: string;
+  image: string;
+  featured?: boolean;
+  glowColor: string;
+  iconSet: string[];
+}) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1
+  });
+
+  // Icon rendering based on type
+  const renderIcon = useCallback((type: string) => {
+    switch (type) {
+      case 'ai':
+        return (
+          <div className="p-1.5 rounded-full bg-indigo-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-indigo-200">
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 16v-5H8l4-7v5h3l-4 7z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'cloud':
+        return (
+          <div className="p-1.5 rounded-full bg-blue-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-blue-200">
+              <path d="M6.5 20q-2.3 0-3.9-1.6T1 14.5q0-2 1.15-3.6T5 9.05q.75-2.3 2.7-3.65T12 4q2.55 0 4.525 1.5T19.3 9.3q2.3.35 3.5 1.975T24 15q0 2.075-1.463 3.538T19 20H6.5z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'code':
+        return (
+          <div className="p-1.5 rounded-full bg-emerald-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-emerald-200">
+              <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'security':
+        return (
+          <div className="p-1.5 rounded-full bg-red-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-red-200">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'chart':
+        return (
+          <div className="p-1.5 rounded-full bg-amber-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-amber-200">
+              <path d="M3.5 18.5l6-6 4 4L22 6.92 20.59 5.5l-8.09 8.09-4-4-7 7z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'data':
+        return (
+          <div className="p-1.5 rounded-full bg-purple-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-purple-200">
+              <path d="M12 3C7.58 3 4 4.79 4 7v10c0 2.21 3.59 4 8 4s8-1.79 8-4V7c0-2.21-3.58-4-8-4zm0 2c3.87 0 6 1.5 6 2s-2.13 2-6 2-6-1.5-6-2 2.13-2 6-2zm0 14c-3.87 0-6-1.5-6-2v-7.18c1.34.84 3.49 1.18 6 1.18 2.51 0 4.66-.34 6-1.18V17c0 .5-2.13 2-6 2z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'web':
+        return (
+          <div className="p-1.5 rounded-full bg-teal-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-teal-200">
+              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm6.93 6h-2.95A15.65 15.65 0 0014.9 4.46c2.12.71 3.9 2.24 4.92 4.07zM12 4.04c.83 1.2 1.48 2.53 1.91 3.96h-3.82c.43-1.43 1.08-2.76 1.91-3.96zM4.26 14C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2H4.26zm.82 2h2.95c.32 1.25.78 2.45 1.38 3.56-2.12-.72-3.9-2.25-4.93-4.08zm2.95-8H5.08c1.03-1.83 2.8-3.36 4.93-4.07C9.41 5.55 8.95 6.75 8.63 8zM12 19.96c-.83-1.2-1.48-2.53-1.91-3.96h3.82c-.43 1.43-1.08 2.76-1.91 3.96zM14.34 14H9.66c-.09-.66-.16-1.32-.16-2s.07-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2zm.25 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95c-1.02 1.82-2.8 3.35-4.93 4.07zM16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2h-3.38z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      case 'mobile':
+        return (
+          <div className="p-1.5 rounded-full bg-pink-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-pink-200">
+              <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" fill="currentColor"/>
+            </svg>
+          </div>
+        );
+      default:
+        return (
+          <div className="p-1.5 rounded-full bg-gray-900/80">
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-gray-200">
+              <path d="M20 3h-4v2h4v18H4V5h4V3H4c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z" fill="currentColor"/>
+              <path d="M17 13H12c-.55 0-1-.45-1-1s.45-1 1-1h5c.55 0 1 .45 1 1s-.45 1-1 1z" fill="currentColor" />
+              <path d="M12 17H7c-.55 0-1-.45-1-1s.45-1 1-1h5c.55 0 1 .45 1 1s-.45 1-1 1z" fill="currentColor" />
+            </svg>
+          </div>
+        );
+    }
+  }, []);
+
+  return (
+    <motion.div
+      ref={ref}
+      className="h-full"
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+    >
+      {/* Main Card - Glass morphism */}
+      <motion.div 
+        className={`relative rounded-2xl p-6 h-full backdrop-blur-sm bg-white/[0.03] bg-opacity-5 border border-white/10 overflow-hidden group
+          shadow-[0_8px_32px_0_rgba(0,0,0,0.36)] ${featured ? '' : ''}`}
+        animate={isHovered ? { 
+          y: -10,
+          boxShadow: '0 30px 60px -12px rgba(0,0,0,0.7), 0 18px 36px -18px rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(20px)'
+        } : {}}
+        transition={{ 
+          duration: 0.3,
+          type: "spring",
+          stiffness: 500,
+          damping: 30
+        }}
+        style={{ 
+          transform: "translateZ(0)",
+          backfaceVisibility: "hidden"
+        }}
+      >
+        {/* Animated border gradient */}
+        <motion.div
+          className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${glowColor} opacity-0 -z-10`}
+          animate={{ opacity: isHovered ? 0.2 : 0 }}
+          transition={{ duration: 0.3 }}
+        />
+
+        {/* Animated glow effect on hover */}
+        <motion.div 
+          className={`absolute -inset-1 bg-gradient-to-r ${glowColor} opacity-0 blur-xl rounded-xl -z-10`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isHovered ? 0.2 : 0 }}
+          transition={{ duration: 0.3 }}
+        />
+
+        {/* Floating holographic badge */}
+        <motion.div 
+          className="absolute top-4 right-4 opacity-80"
+          animate={isHovered ? { 
+            y: [0, -5, 0], 
+            rotateZ: [0, 5, 0],
+          } : {}}
+          transition={{ 
+            duration: 3, 
+            repeat: isHovered ? Infinity : 0,
+            repeatType: "reverse",
+            ease: "easeInOut"
+          }}
+        >
+          <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${glowColor} flex items-center justify-center relative overflow-hidden`}>
+            <div className="text-xs font-bold text-white uppercase tracking-wider text-center">Verified</div>
+            {/* Holographic effect */}
+            <motion.div
+              className="absolute inset-0 opacity-50 bg-gradient-to-tr from-white/20 to-transparent"
+              animate={{
+                backgroundPosition: ['0% 0%', '100% 100%'],
+                opacity: [0.2, 0.5, 0.2]
+              }}
+              transition={{
+                repeat: Infinity,
+                repeatType: "mirror",
+                duration: 3
+              }}
+              style={{
+                backgroundSize: '200% 200%'
+              }}
+            />
+            {/* Scanning line effect */}
+            <motion.div
+              className="absolute inset-0 w-full h-[2px] bg-white/80 blur-[1px]"
+              animate={{
+                top: ['0%', '100%', '0%'],
+              }}
+              transition={{
+                repeat: Infinity,
+                duration: 2.5,
+                ease: "linear"
+              }}
+            />
+          </div>
+        </motion.div>
+        
+        <div className="flex flex-col h-full">
+          <motion.div 
+            className="mb-6 flex items-center"
+            animate={isHovered ? { y: 0 } : { y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="mr-4">
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${glowColor} bg-opacity-20 w-12 h-12 flex items-center justify-center relative group-hover:shadow-lg`}>
+                {/* Add an appropriate icon for the certification, you can replace this */}
+                <div className="opacity-80">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
+                    <path d="M20 3h-1V1h-2v2H7V1H5v2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H4V8h16v13z" fill="currentColor"/>
+                    <path d="M17 13H12c-.55 0-1-.45-1-1s.45-1 1-1h5c.55 0 1 .45 1 1s-.45 1-1 1z" fill="currentColor" />
+                    <path d="M12 17H7c-.55 0-1-.45-1-1s.45-1 1-1h5c.55 0 1 .45 1 1s-.45 1-1 1z" fill="currentColor" />
+                  </svg>
+                </div>
+                {/* Pulsing effect */}
+                <motion.div 
+                  className="absolute inset-0 rounded-lg opacity-0"
+                  animate={{
+                    boxShadow: ['0 0 0 0px rgba(255,255,255,0)', '0 0 0 3px rgba(255,255,255,0.3)', '0 0 0 10px rgba(255,255,255,0)'],
+                    opacity: [0, 0.5, 0]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    delay: 1
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              {/* Title with mask effect on hover */}
+              <div className="overflow-hidden">
+                <motion.h3 
+                  className={`font-bold text-xl md:text-2xl text-white tracking-tight`}
+                  animate={{ y: isHovered ? [0, 0] : 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  {title}
+                </motion.h3>
+              </div>
+              
+              <div className="flex items-center mt-1">
+                <p className="text-sm text-blue-300">{issuer}</p>
+                <div className="mx-2 w-1 h-1 bg-blue-500/50 rounded-full"></div>
+                <p className="text-sm text-gray-400">{date}</p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <div className="flex-grow relative">
+            {/* Description */}
+            <p className="text-gray-300 text-sm mb-4 leading-relaxed">
+              {description}
+            </p>
+            
+            {/* Credential ID */}
+            <div className="text-xs text-gray-400 font-mono backdrop-blur-sm bg-white/5 py-2 px-3 rounded inline-flex items-center">
+              <span className="mr-2">Credential ID:</span>
+              <span className="text-indigo-300">{credentialId}</span>
+            </div>
+            
+            {/* Skills/technologies tags */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {iconSet.map((icon, i) => (
+                <motion.div
+                  key={`${icon}-${i}`}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ 
+                    delay: 0.5 + i * 0.1,
+                    type: "spring",
+                    stiffness: 500,
+                  }}
+                >
+                  {renderIcon(icon)}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Verification button/link */}
+          <motion.div 
+            className="mt-6 pt-4 border-t border-white/5"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              delay: 0.7,
+              duration: 0.5
+            }}
+          >
+            <motion.button
+              className={`px-4 py-2 rounded-lg bg-gradient-to-r ${glowColor} text-white text-sm font-medium w-full flex items-center justify-center space-x-2 relative overflow-hidden group`}
+              whileHover={{ 
+                boxShadow: `0 0 20px 2px rgba(120, 100, 255, 0.3)`,
+              }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.2 }}
+            >
+              <span>Verify Certificate</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              
+              {/* Animated shine effect */}
+              <motion.div 
+                className="absolute top-0 -left-full w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
+                animate={{ left: ['0%', '150%'] }}
+                transition={{
+                  repeat: Infinity,
+                  repeatDelay: 3,
+                  duration: 1.5,
+                  ease: "easeInOut"
+                }}
+              />
+            </motion.button>
+          </motion.div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+});
 
 const EnhancedProjectSection = memo(function EnhancedProjectSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -931,7 +1534,7 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
                     transition={{ duration: 0.4 }}
                   />
                   
-                  <div className={`p-3 rounded-full bg-gradient-to-br ${card.color}`}>
+                  <div className={`p-2 rounded-full bg-gradient-to-br ${card.color}`}>
                     {card.icon}
                   </div>
                   
@@ -1268,6 +1871,1070 @@ const EnhancedContactSection = memo(function EnhancedContactSection() {
         </div>
       </div>
     </motion.section>
+  );
+});
+
+const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcase() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCert, setSelectedCert] = useState<number | null>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  
+  // Track which card is being hovered for hover effects
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  
+  const certifications = [
+    {
+      id: "british-airways Data Science",
+      title: "Data Science Virtual Experience",
+      issuer: "British Airways",
+      date: "December 2023",
+      credentialId: "vPaWPWeLB9fbLzrS3",
+      description: "Completed a virtual data science internship with British Airways where I applied web scraping and sentiment analysis to customer reviews, and built a classification model to predict customer purchasing behavior.",
+      logo: "British_Airways.png",
+      image: "British_Airways.png",
+      certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/British%20Airways/NjynCWzGSaWXQCxSX_British%20Airways_dzz8iZuAAdX3YD6KC_1701898649252_completion_certificate.pdf",
+      skills: ["Airport Planning, Assumption Building, Communication, Data Modeling, Data Science, Data Visualization, Machine Learning, Power point"]
+    },
+    {
+      id: "BCG Data Science",
+      title: "Data Science Virtual Experience",
+      issuer: "BCG",
+      date: "December 2023",
+      credentialId: "LjJbavuCxTjfNdAss",
+      description: "Completed the BCG X Data Science Virtual Internship, where I developed a churn prediction model for a major energy client (PowerCo), performed EDA, feature engineering, and used a Random Forest classifier to inform pricing strategy and reduce customer attrition.",
+      logo: "BCG_X.jpg",
+      image: "BCG_X.jpg",
+      certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/BCG%20/Tcz8gTtprzAS4xSoK_BCG_dzz8iZuAAdX3YD6KC_1702928416915_completion_certificate.pdf",
+      skills: ["Business Understanding, Client Communication, Communication, Creativity, Hypothesis Framing, Exploratory Data Analysis (EDA), Data Visualization, Mathematical Modelling, Model Evaluation, Model Interpretation, Programming, Synthesis"]
+    },
+    {
+      id: "Quantium Data Analystics",
+      title: "Data Analytics with Quantium computing",
+      issuer: "Quantium",
+      date: "January 2024",
+      credentialId: "LjJbavuCxTjfNdAss",
+      description: "Completed a real-world data analytics project simulating industry workflows. Applied data wrangling, validation, statistical testing, and visualization using Python to extract insights. Developed dashboards and communicated findings through presentations, showcasing commercial thinking, programming, and communication skills to support data-driven decision-making.",
+      logo: "Quantium.jpg.webp",
+      image: "Quantium.jpg.webp",
+      certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/Quantium/NkaC7knWtjSbi6aYv_Quantium_dzz8iZuAAdX3YD6KC_1704417772874_completion_certificate.pdf",
+      skills: ["Commercial Thinking, Communication Skills, Data Analysis, Data Validation, Data Visualization, Data Wrangling, Presentation Skills Programming, Statistical Testing"]
+    },
+    {
+      id: "PWC Switzerland Power BI",
+      title: "Power BI Virtual Experience",
+      issuer: "PWC Switzerland",
+      date: "January 2024",
+      credentialId: "fKNpebdZgXg7XakT4",
+      description: "Completed PwC Switzerland's Power BI Virtual Internship, developing dashboards for call center analysis, customer retention, and diversity metrics. Utilized data modeling, DAX, and visualization techniques to deliver clear business insights.",
+      logo: "PWC Switzerland.png", 
+      image: "PWC Switzerland.png",
+      certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/PwC%20Switzerland/a87GpgE6tiku7q3gu_PwC%20Switzerland_dzz8iZuAAdX3YD6KC_1705367103774_completion_certificate.pdf",
+      skills: ["Power BI Development, Dashboard Design & Visualization, Calculating Measures (DAX), Defining and Tracking KPIs, Insight Generation & Business Actions, Data-Driven Decision Making, Self-Reflection & Continuous Improvement"]
+    },
+    {
+      id: "Accenture Data Analytics and Data Visualization",
+      title: "Data Analytics and Data Visualization",
+      issuer: "Accenture",
+      date: "January 2024",
+      credentialId: "puq3dn8d6vnKYK5fD",
+      description: "Completed Accenture Analyzed Social Buzz’s content data to identify top-performing categories. Cleaned and modeled datasets, created visual dashboards, and presented strategic insights to support IPO readiness using data analysis, visualization, and storytelling skills.",
+      logo: "Accenture.jpg.webp",
+      image: "Accenture.jpg.webp",
+      certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/Accenture%20North%20America/hzmoNKtzvAzXsEqx8_Accenture%20North%20America_dzz8iZuAAdX3YD6KC_1718480772884_completion_certificate.pdf",
+      skills: ["Data Modeling, Data Understanding, Data Visualization, Communication, Public Speaking, Teamwork, Storytelling, Project Planning, Presentations, Strategic Thinking"]
+    }
+  ];
+
+  // Navigate to previous certificate
+  const prevCertificate = () => {
+    if (activeIndex > 0) {
+      setActiveIndex(activeIndex - 1);
+      scrollToIndex(activeIndex - 1);
+    } else {
+      // Loop to the end if at the beginning
+      setActiveIndex(certifications.length - 1);
+      scrollToIndex(certifications.length - 1);
+    }
+  };
+
+  // Navigate to next certificate
+  const nextCertificate = () => {
+    if (activeIndex < certifications.length - 1) {
+      setActiveIndex(activeIndex + 1);
+      scrollToIndex(activeIndex + 1);
+    } else {
+      // Loop to the beginning if at the end
+      setActiveIndex(0);
+      scrollToIndex(0);
+    }
+  };
+
+  // Scroll to a specific certificate index
+  const scrollToIndex = (index: number) => {
+    if (sliderRef.current) {
+      const certElement = sliderRef.current.children[index] as HTMLElement;
+      if (certElement) {
+        sliderRef.current.scrollTo({
+          left: certElement.offsetLeft - sliderRef.current.offsetWidth / 2 + certElement.offsetWidth / 2,
+          behavior: 'smooth'
+        });
+      }
+    }
+  };
+
+  // Open modal with certificate details
+  const openCertificateModal = (index: number) => {
+    setSelectedCert(index);
+    setShowModal(true);
+  };
+
+  // Mouse/touch drag handling for slider
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.pageX - sliderRef.current!.offsetLeft);
+    setScrollLeft(sliderRef.current!.scrollLeft);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    
+    // Find closest certificate to snap to after dragging
+    if (sliderRef.current) {
+      const scrollPosition = sliderRef.current.scrollLeft;
+      const certWidth = sliderRef.current.scrollWidth / certifications.length;
+      const nearestIndex = Math.round(scrollPosition / certWidth);
+      const boundedIndex = Math.max(0, Math.min(nearestIndex, certifications.length - 1));
+      
+      setActiveIndex(boundedIndex);
+      scrollToIndex(boundedIndex);
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    const x = e.pageX - sliderRef.current!.offsetLeft;
+    const dragDistance = x - startX;
+    sliderRef.current!.scrollLeft = scrollLeft - dragDistance;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - sliderRef.current!.offsetLeft);
+    setScrollLeft(sliderRef.current!.scrollLeft);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    
+    // Find closest certificate to snap to after dragging
+    if (sliderRef.current) {
+      const scrollPosition = sliderRef.current.scrollLeft;
+      const certWidth = sliderRef.current.scrollWidth / certifications.length;
+      const nearestIndex = Math.round(scrollPosition / certWidth);
+      const boundedIndex = Math.max(0, Math.min(nearestIndex, certifications.length - 1));
+      
+      setActiveIndex(boundedIndex);
+      scrollToIndex(boundedIndex);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    const x = e.touches[0].pageX - sliderRef.current!.offsetLeft;
+    const dragDistance = x - startX;
+    sliderRef.current!.scrollLeft = scrollLeft - dragDistance;
+  };
+
+  // Add body scroll lock effect when modal is open
+  useEffect(() => {
+    if (showModal) {
+      // Prevent background scrolling when modal is openx
+      document.body.style.overflow = 'hidden';
+      
+      // Add escape key listener
+      const handleEscape = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setShowModal(false);
+        }
+      };
+      
+      document.addEventListener('keydown', handleEscape);
+      
+      return () => {
+        // Restore scrolling when modal is closed
+        document.body.style.overflow = 'auto';
+        document.removeEventListener('keydown', handleEscape);
+      };
+    }
+  }, [showModal]);
+
+  // Add the custom scrollbar styles
+  const customScrollbarStyles = `
+    .certificate-modal-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .certificate-modal-scrollbar::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
+    .certificate-modal-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.5);
+      border-radius: 3px;
+    }
+    .certificate-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 92, 246, 0.8);
+    }
+  `;
+
+  return (
+    <motion.section 
+      className="py-24 px-8 relative bg-gradient-to-b from-black via-gray-900 to-black overflow-hidden"
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      viewport={{ once: true, amount: 0.2 }}
+    >
+      {/* Abstract animated background elements */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        {/* Neural network-like animated connections */}
+        <svg className="absolute w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="certGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#4F46E5" stopOpacity="1" />
+              <stop offset="100%" stopColor="#9333EA" stopOpacity="1" />
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="8" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#glow)">
+            {[...Array(15)].map((_, i) => (
+              <motion.line
+                key={`line-${i}`}
+                x1={`${Math.random() * 100}%`}
+                y1={`${Math.random() * 100}%`}
+                x2={`${Math.random() * 100}%`}
+                y2={`${Math.random() * 100}%`}
+                stroke="url(#certGrad)"
+                strokeWidth="0.5"
+                initial={{ pathLength: 0, opacity: 0.1 }}
+                animate={{ 
+                  pathLength: [0, 1, 0],
+                  opacity: [0.1, 0.5, 0.1]
+                }}
+                transition={{
+                  duration: 8 + i * 2,
+                  ease: "easeInOut",
+                  repeat: Infinity,
+                  repeatType: "loop",
+                  delay: i * 0.5
+                }}
+              />
+            ))}
+          </g>
+        </svg>
+
+        {/* Particle system */}
+        {[...Array(50)].map((_, i) => (
+          <motion.div
+            key={`particle-${i}`}
+            className="absolute rounded-full bg-blue-500"
+            style={{
+              width: Math.random() * 6 + 2,
+              height: Math.random() * 6 + 2,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.3,
+              filter: "blur(1px)"
+            }}
+            animate={{
+              x: [0, Math.random() * 40 - 20],
+              y: [0, Math.random() * 40 - 20],
+              opacity: [0, Math.random() * 0.5, 0]
+            }}
+            transition={{
+              duration: 10 + Math.random() * 10,
+              repeat: Infinity,
+              repeatType: "mirror"
+            }}
+          />
+        ))}
+
+        {/* Larger glowing orbs */}
+        <motion.div 
+          className="absolute w-[600px] h-[600px] rounded-full bg-indigo-600/20 blur-[120px]"
+          style={{ top: '-10%', left: '-5%' }}
+          animate={{ 
+            opacity: [0.2, 0.3, 0.2],
+          }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div 
+          className="absolute w-[500px] h-[500px] rounded-full bg-violet-600/20 blur-[100px]"
+          style={{ bottom: '-10%', right: '-5%' }}
+          animate={{ 
+            opacity: [0.2, 0.3, 0.2],
+          }}
+          transition={{ duration: 7, repeat: Infinity, repeatType: "reverse" }}
+        />
+
+        {/* Digital circuit pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03] mix-blend-screen" 
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h100v100H0z' fill='none'/%3E%3Cpath d='M1 1h98v98H1z' fill='none' stroke='%23fff' stroke-width='0.5'/%3E%3Cpath d='M10 10h80v80H10z' fill='none' stroke='%23fff' stroke-width='0.5'/%3E%3Cpath d='M10 50h80' stroke='%23fff' stroke-width='0.5'/%3E%3Cpath d='M50 10v80' stroke='%23fff' stroke-width='0.5'/%3E%3Cpath d='M1 1l98 98M1 99l98-98' stroke='%23fff' stroke-width='0.5'/%3E%3Ccircle cx='50' cy='50' r='5' fill='%23fff'/%3E%3Ccircle cx='20' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='80' cy='20' r='2' fill='%23fff'/%3E%3Ccircle cx='20' cy='80' r='2' fill='%23fff'/%3E%3Ccircle cx='80' cy='80' r='2' fill='%23fff'/%3E%3C/svg%3E")`,
+              backgroundSize: '60px 60px',
+            }}
+        />
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Section heading with futuristic design */}
+        <motion.div 
+          className="text-center mb-20 relative"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          {/* Decorative elements */}
+          <motion.div 
+            className="absolute left-1/2 -top-12 w-[300px] h-[2px] -ml-[150px]"
+            initial={{ scaleX: 0, opacity: 0 }}
+            whileInView={{ scaleX: 1, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            viewport={{ once: true }}
+          >
+            <div className="w-full h-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent"></div>
+          </motion.div>
+
+          <motion.h2 
+            className="text-5xl md:text-6xl font-black mb-4 tracking-tight relative inline-block"
+          >
+            {/* Glowing text effect */}
+            <span className="text-transparent bg-clip-text bg-gradient-to-br from-white via-blue-100 to-blue-100 opacity-90">
+              Achievements
+            </span>
+            
+            {/* Accent glow */}
+            <motion.span 
+              className="absolute -inset-2 rounded-lg bg-blue-500/20 blur-xl -z-10"
+              animate={{ 
+                opacity: [0.4, 0.8, 0.4],
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+            />
+            
+            {/* Animated highlight */}
+            <motion.span
+              className="absolute bottom-0 left-0 w-full h-[6px] bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-full"
+              initial={{ scaleX: 0, opacity: 0 }}
+              whileInView={{ scaleX: 1, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              viewport={{ once: true }}
+            />
+          </motion.h2>
+
+          <motion.p 
+            className="text-gray-300 max-w-2xl mx-auto mt-6 text-lg relative z-10"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.4 }}
+            viewport={{ once: true }}
+          >
+            Professional certifications and recognition in the field
+          </motion.p>
+        </motion.div>
+
+        {/* Horizontal certification showcase */}
+        <div 
+          className="relative flex items-center justify-center overflow-hidden"
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseMove={handleMouseMove}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
+        >
+          {/* Left arrow */}
+          <motion.button
+            className="absolute left-0 z-20 p-2 bg-gradient-to-r from-gray-800 to-transparent text-white rounded-full shadow-lg"
+            onClick={prevCertificate}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </motion.button>
+
+          {/* Certification cards - UPDATED FOR CLEANER LOOK */}
+          <div 
+            ref={sliderRef} 
+            className="flex space-x-6 overflow-x-auto py-6 px-4"
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {certifications.map((cert, index) => (
+              <motion.div
+                key={index}
+                className="flex-shrink-0 w-80 h-96 bg-white/5 backdrop-blur-lg rounded-2xl border border-white/10 shadow-lg overflow-hidden cursor-pointer group"
+                style={{ scrollSnapAlign: 'center' }}
+                onClick={() => openCertificateModal(index)}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                onHoverStart={() => setHoveredIndex(index)}
+                onHoverEnd={() => setHoveredIndex(null)}
+              >
+                {/* Card with cover image and hover effect */}
+                <div className="relative h-full flex flex-col">
+                  {/* Certificate image with shine effect */}
+                  <div className="relative w-full h-48 overflow-hidden">
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-tr from-black/60 via-black/20 to-transparent z-10"
+                      animate={hoveredIndex === index ? { opacity: 0.4 } : { opacity: 0.7 }}
+                    />
+                    
+                    <motion.img 
+                      src={cert.image} 
+                      alt={cert.title}
+                      className="w-full h-full object-cover"
+                      animate={hoveredIndex === index ? { scale: 1.05 } : { scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                    
+                    {/* Animated shine effect */}
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12 translate-x-[-100%]"
+                      animate={hoveredIndex === index ? {
+                        translateX: ['100%']
+                      } : {}}
+                      transition={hoveredIndex === index ? {
+                        duration: 1.5,
+                        ease: "easeOut"
+                      } : {}}
+                    />
+                    
+                    {/* Logo badge */}
+                    <div className="absolute top-4 left-4 z-20 bg-black/50 backdrop-blur-md rounded-full p-1 border border-white/10">
+                      <img 
+                        src={cert.logo} 
+                        alt={cert.issuer}
+                        className="w-10 h-10 object-contain rounded-full"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Content area */}
+                  <div className="p-5 flex-1 flex flex-col justify-between relative">
+                    {/* Text content */}
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-1 line-clamp-2">{cert.title}</h3>
+                      <div className="flex items-center text-sm text-gray-400">
+                        <span>{cert.issuer}</span>
+                        <span className="mx-2">•</span>
+                        <span>{cert.date}</span>
+                      </div>
+                    </div>
+                    
+                    {/* View details button */}
+                    <motion.div 
+                      className="mt-4 flex items-center justify-between"
+                      animate={hoveredIndex === index ? { y: 0, opacity: 1 } : { y: 5, opacity: 0.8 }}
+                    >
+                      <motion.div 
+                        className="inline-flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg text-white text-sm font-medium space-x-2 group-hover:bg-gradient-to-r from-blue-600/80 to-purple-600/80 transition-all duration-300"
+                      >
+                        <span>View Certificate</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                          <polyline points="15 3 21 3 21 9"></polyline>
+                          <line x1="10" y1="14" x2="21" y2="3"></line>
+                        </svg>
+                      </motion.div>
+                      
+                      {/* Badge showing number of skills */}
+                      <motion.div
+                        className="px-3 py-1 bg-purple-900/50 text-purple-200 text-xs rounded-full"
+                        whileHover={{ scale: 1.1 }}
+                      >
+                        {cert.skills.length} Skills
+                      </motion.div>
+                    </motion.div>
+                    
+                    {/* Decorative corner accent */}
+                    <motion.div 
+                      className="absolute -bottom-6 -right-6 w-12 h-12 rounded-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 blur-md"
+                      animate={hoveredIndex === index ? { 
+                        scale: 1.5, 
+                        opacity: 0.8 
+                      } : { 
+                        scale: 1, 
+                        opacity: 0.3 
+                      }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                  
+                  {/* Pulsing verification badge */}
+                  <motion.div 
+                    className="absolute top-3 right-3 z-20 flex items-center justify-center"
+                    animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <div className="text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-full px-2 py-0.5 flex items-center">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                      </svg>
+                      <span>Verified</span>
+                    </div>
+                  </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Right arrow */}
+          <motion.button
+            className="absolute right-0 z-20 p-2 bg-gradient-to-l from-gray-800 to-transparent text-white rounded-full shadow-lg"
+            onClick={nextCertificate}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </motion.button>
+        </div>
+
+        {/* Modal for detailed certificate view */}
+        <AnimatePresence>
+          {showModal && selectedCert !== null && (
+            <motion.div 
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+            >
+              {/* Backdrop with blur effect */}
+              <motion.div
+                className="absolute inset-0 bg-black/75 backdrop-blur-md"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+              
+              {/* Modal container with fixed max-height */}
+              <motion.div 
+                className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl max-w-lg w-full relative z-[101] flex flex-col"
+                style={{ maxHeight: "calc(100vh - 40px)" }} // Fixed height with margin
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ 
+                  type: "spring", 
+                  damping: 20, 
+                  stiffness: 300 
+                }}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="certificate-modal-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Animated glow effect around modal */}
+                <motion.div 
+                  className="absolute -inset-1 rounded-2xl opacity-50 z-[-1]"
+                  animate={{ 
+                    boxShadow: [
+                      '0 0 20px 5px rgba(79, 70, 229, 0.5)', 
+                      '0 0 30px 5px rgba(139, 92, 246, 0.5)', 
+                      '0 0 20px 5px rgba(79, 70, 229, 0.5)'
+                    ],
+                  }}
+                  transition={{ 
+                    duration: 3, 
+                    repeat: Infinity,
+                    repeatType: "reverse" 
+                  }}
+                />
+                
+                {/* Fixed Header Section */}
+                <div className="p-6 border-b border-white/10 sticky top-0 bg-[rgba(15,15,15,0.7)] backdrop-blur-xl z-10">
+                  {/* Close button */}
+                  <motion.button 
+                    className="absolute top-4 right-4 text-white bg-black/30 rounded-full p-2 hover:bg-black/50 z-10 group"
+                    onClick={() => setShowModal(false)}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label="Close certificate details"
+                  >
+                    <motion.svg 
+                      width="20" 
+                      height="20" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      animate={{ rotate: [0, 90, 180, 270, 360] }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                      className="opacity-80 group-hover:opacity-100"
+                    >
+                      <path d="M18 6L6 18M6 6l12 12" />
+                    </motion.svg>
+                  </motion.button>
+                  
+                  {/* Header with logo and title */}
+                  <div className="flex items-center pr-8">
+                    <div className="w-16 h-16 mr-4 relative">
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-600 to-purple-600"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                      />
+                      <img 
+                        src={certifications[selectedCert].logo} 
+                        alt={certifications[selectedCert].issuer}
+                        className="w-full h-full object-contain rounded-full border-2 border-white/10 p-2 relative z-10 bg-black/30 backdrop-blur-sm"
+                      />
+                    </div>
+                    <div>
+                      <h3 
+                        id="certificate-modal-title"
+                        className="text-2xl font-bold text-white"
+                      >
+                        {certifications[selectedCert].title}
+                      </h3>
+                      <div className="flex items-center text-gray-300">
+                        <span>{certifications[selectedCert].issuer}</span>
+                        <span className="mx-2 text-gray-500">•</span>
+                        <span className="text-blue-400">{certifications[selectedCert].date}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto certificate-modal-scrollbar">
+                  <div className="p-6">
+                    {/* Background glow effect */}
+                    <motion.div
+                      className="absolute inset-0 -z-10 opacity-30 pointer-events-none"
+                      animate={{ 
+                        background: [
+                          'radial-gradient(circle at 30% 20%, rgba(79, 70, 229, 0.4) 0%, transparent 70%)',
+                          'radial-gradient(circle at 70% 60%, rgba(124, 58, 237, 0.4) 0%, transparent 70%)'
+                        ],
+                      }}
+                      transition={{ duration: 8, repeat: Infinity, repeatType: "reverse" }}
+                    />
+                    
+                    {/* Certificate image with enhanced hover effect */}
+                    <motion.div 
+                      className="w-full h-56 rounded-xl mb-6 overflow-hidden bg-white/5 flex items-center justify-center relative group"
+                      whileHover={{ boxShadow: "0 0 30px rgba(124, 58, 237, 0.3)" }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <img 
+                        src={certifications[selectedCert].image} 
+                        alt={certifications[selectedCert].title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      
+                      {/* Credential ID overlaid on image */}
+                      <div className="absolute bottom-3 left-3 right-3 flex justify-between">
+                        <div className="text-xs bg-black/60 backdrop-blur-sm py-1 px-2 rounded text-gray-300 flex items-center">
+                          <span className="mr-1 text-gray-400">ID:</span> 
+                          <span className="font-mono text-blue-300">{certifications[selectedCert].credentialId}</span>
+                        </div>
+                        {/* Verified badge */}
+                        <div className="bg-green-900/60 backdrop-blur-sm text-green-300 text-xs py-1 px-2 rounded flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                          </svg>
+                          <span>Verified</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                    
+                    {/* Description */}
+                    <div className="mb-6">
+                      <h4 className="text-sm uppercase tracking-wider text-gray-400 mb-2">Description</h4>
+                      <motion.p 
+                        className="text-gray-200 text-base leading-relaxed"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2, duration: 0.5 }}
+                      >
+                        {certifications[selectedCert].description}
+                      </motion.p>
+                    </div>
+                    
+                    {/* Skills tags with staggered animation */}
+                    <div className="mb-6">
+                      <h4 className="text-sm uppercase tracking-wider text-gray-400 mb-2">Skills & Competencies</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {certifications[selectedCert].skills.map((skill, i) => (
+                          <motion.span 
+                            key={i} 
+                            className="px-3 py-1.5 text-sm rounded-full bg-gradient-to-r from-purple-900/50 to-blue-900/50 text-purple-200 border border-purple-500/20"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: 0.1 + i * 0.05, type: "spring", stiffness: 300 }}
+                          >
+                            {skill}
+                          </motion.span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Extra content to demonstrate scrolling */}
+                    <div className="mb-6">
+                      <h4 className="text-sm uppercase tracking-wider text-gray-400 mb-2">Certificate Details</h4>
+                      <div className="space-y-3 text-gray-300">
+                        <div className="flex items-center">
+                          <div className="w-32 text-gray-400">Date Issued:</div>
+                          <div>{certifications[selectedCert].date}</div>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-32 text-gray-400">Credential ID:</div>
+                          <div className="font-mono text-blue-300">{certifications[selectedCert].credentialId}</div>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-32 text-gray-400">Type:</div>
+                          <div>Professional Certificate</div>
+                        </div>
+                        <div className="flex items-center">
+                          <div className="w-32 text-gray-400">Expiry:</div>
+                          <div>No Expiration</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Fixed Footer/Actions */}
+                <div className="p-6 border-t border-white/10 sticky bottom-0 bg-[rgba(15,15,15,0.7)] backdrop-blur-xl z-10">
+                  <div className="flex justify-between items-center">
+                    <motion.a 
+                      href={certifications[selectedCert].certificateUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg shadow-lg hover:shadow-blue-500/30 hover:shadow-lg transition-all duration-300 relative overflow-hidden"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <span className="relative z-10">View Certificate</span>
+                      <motion.svg 
+                        className="ml-2 w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </motion.svg>
+                      
+                      {/* Shimmering effect on button hover */}
+                      <motion.div 
+                        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 group-hover:translate-x-full transition-transform duration-1000"
+                        aria-hidden="true"
+                      />
+                    </motion.a>
+                    
+                    <button 
+                      onClick={() => setShowModal(false)}
+                      className="text-gray-400 hover:text-white transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Indicator dots for navigation */}
+        <div className="flex justify-center gap-2 mt-6">
+          {certifications.map((_, index) => (
+            <motion.button
+              key={index}
+              onClick={() => {
+                setActiveIndex(index);
+                scrollToIndex(index);
+              }}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                activeIndex === index 
+                  ? 'bg-blue-500 w-8' 
+                  : 'bg-gray-500/50 hover:bg-gray-400/60'
+              }`}
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+            />
+          ))}
+        </div>
+      </div>
+    </motion.section>
+  );
+});
+
+const TestimonialCarousel = memo(function TestimonialCarousel() {
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [width, setWidth] = useState(0);
+  
+  // Testimonials data (you already have this data elsewhere)
+  const testimonials = [
+    {
+      name: "Robert Chen",
+      role: "CTO, DLK Technology",
+      image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=1000&auto=format&fit=crop",
+      feedback: "I've worked with dozens of developers over my career, but Kirthik stands out. His ability to grasp complex problems and deliver elegant solutions helped us launch months ahead of schedule. A genuine talent who's now our go-to for challenging projects.",
+      gradient: "from-blue-600 to-purple-600",
+      icon: "tech"
+    },
+    {
+      name: "Jessica Williams",
+      role: "Director of Product Innovation, DLK Technology",
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop",
+      feedback: "Working with Kirthik has been refreshing. He doesn't just code – he understands business objectives and delivers solutions that actually drive results. After implementing his recommendations, our user engagement increased by 32%. Would hire again in a heartbeat.",
+      gradient: "from-purple-600 to-pink-600",
+      icon: "data"
+    },
+    {
+      name: "Michael Rodriguez",
+      role: "Head of Engineering, NXVOY",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop",
+      feedback: "When our team got stuck on a critical integration issue, Kirthik stepped in and solved it in days. His technical knowledge is impressive, but it's his problem-solving mindset that truly sets him apart. Couldn't ask for a better collaborator when facing tight deadlines.",
+      gradient: "from-cyan-500 to-blue-500",
+      icon: "product"
+    },
+    {
+      name: "Dr. Amelia Patel",
+      role: "AI Research Lead, NXVOY",
+      image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1000&auto=format&fit=crop",
+      feedback: "Kirthik has that rare combination of deep technical knowledge and excellent communication skills. He translated our complex requirements into a working solution that exceeded expectations. The models he built are still core to our product two years later. A true professional.",
+      gradient: "from-emerald-500 to-teal-500",
+      icon: "research"
+    },
+    {
+      name: "David Foster",
+      role: "VP of Mobile Development, NXVOY",
+      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=1000&auto=format&fit=crop",
+      feedback: "I've recommended Kirthik to several colleagues because he consistently delivers. On our last project, he identified an approach that cut our cloud costs by 40% while improving performance. He's not just a coder – he's a strategic thinker who makes the entire team better.",
+      gradient: "from-orange-500 to-pink-600",
+      icon: "mobile"
+    }
+  ];
+
+  // Measure carousel width
+  useEffect(() => {
+    if (carouselRef.current) {
+      // Get the actual rendered width
+      setWidth(carouselRef.current.scrollWidth - carouselRef.current.offsetWidth);
+    }
+  }, []);
+
+  // Auto-scroll functionality
+  useEffect(() => {
+    if (isPaused || !carouselRef.current) return;
+    
+    const interval = setInterval(() => {
+      if (!carouselRef.current) return;
+      
+      const newIndex = (activeIndex + 1) % testimonials.length;
+      setActiveIndex(newIndex);
+      
+      // Calculate the position to scroll to
+      const testimonialWidth = carouselRef.current.scrollWidth / testimonials.length;
+      carouselRef.current.scrollTo({
+        left: newIndex * testimonialWidth,
+        behavior: 'smooth'
+      });
+    }, 8000); // Scroll every 8 seconds
+    
+    return () => clearInterval(interval);
+  }, [activeIndex, testimonials.length, isPaused]);
+
+  // Navigate to a specific testimonial
+  const navigateTo = useCallback((index: number) => {
+    if (!carouselRef.current) return;
+    
+    setActiveIndex(index);
+    const testimonialWidth = carouselRef.current.scrollWidth / testimonials.length;
+    carouselRef.current.scrollTo({
+      left: index * testimonialWidth,
+      behavior: 'smooth'
+    });
+  }, [testimonials.length]);
+
+  // Previous testimonial
+  const prevTestimonial = useCallback(() => {
+    const newIndex = activeIndex === 0 ? testimonials.length - 1 : activeIndex - 1;
+    navigateTo(newIndex);
+  }, [activeIndex, navigateTo, testimonials.length]);
+
+  // Next testimonial
+  const nextTestimonial = useCallback(() => {
+    const newIndex = (activeIndex + 1) % testimonials.length;
+    navigateTo(newIndex);
+  }, [activeIndex, navigateTo, testimonials.length]);
+
+  // Handle scroll event to update active index
+  const handleScroll = useCallback(() => {
+    if (!carouselRef.current) return;
+    
+    const scrollPosition = carouselRef.current.scrollLeft;
+    const testimonialWidth = carouselRef.current.scrollWidth / testimonials.length;
+    const newIndex = Math.round(scrollPosition / testimonialWidth);
+    
+    if (newIndex !== activeIndex) {
+      setActiveIndex(newIndex);
+    }
+  }, [activeIndex, testimonials.length]);
+
+  // Add scroll event listener
+  useEffect(() => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+    
+    carousel.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      carousel.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
+
+  return (
+    <div className="relative">
+      {/* Beautiful dynamic background gradient that follows active testimonial */}
+      <motion.div 
+        className={`absolute inset-0 opacity-20 blur-3xl -z-10 rounded-3xl transition-all duration-700`}
+        animate={{
+          background: activeIndex === 0 ? 'linear-gradient(to right, #2563eb, #7c3aed)' :
+                      activeIndex === 1 ? 'linear-gradient(to right, #7c3aed, #db2777)' :
+                      activeIndex === 2 ? 'linear-gradient(to right, #06b6d4, #3b82f6)' :
+                      activeIndex === 3 ? 'linear-gradient(to right, #10b981, #0d9488)' :
+                      'linear-gradient(to right, #f59e0b, #db2777)'
+        }}
+      />
+      
+      {/* Carousel container with overflow */}
+      <motion.div 
+        ref={carouselRef}
+        className="overflow-x-hidden cursor-grab"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        <motion.div 
+          drag="x"
+          dragConstraints={{ right: 0, left: -width }}
+          className="flex gap-6 md:gap-8 py-4"
+          style={{ paddingBottom: '20px' }} // Room for indicator dots
+        >
+          {testimonials.map((testimonial, index) => (
+            <motion.div
+              key={testimonial.name}
+              className="min-w-[300px] md:min-w-[400px] lg:min-w-[450px]"
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ 
+                duration: 0.6, 
+                delay: index * 0.1, 
+                type: "spring", 
+                stiffness: 100
+              }}
+            >
+              <TestimonialCard
+                name={testimonial.name}
+                role={testimonial.role}
+                image={testimonial.image}
+                feedback={testimonial.feedback}
+                delay={index * 0.1}
+                gradient={testimonial.gradient}
+                icon={testimonial.icon}
+              />
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
+
+      {/* Navigation arrows */}
+      <div className="absolute top-1/2 left-0 -translate-y-1/2 w-full flex justify-between items-center px-2 pointer-events-none">
+        <motion.button
+          onClick={prevTestimonial}
+          className="bg-black/30 backdrop-blur-sm text-white p-3 rounded-full transform -translate-x-2 hover:bg-black/50 pointer-events-auto"
+          whileHover={{ scale: 1.1, x: -8 }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </motion.button>
+
+        <motion.button
+          onClick={nextTestimonial}
+          className="bg-black/30 backdrop-blur-sm text-white p-3 rounded-full transform translate-x-2 hover:bg-black/50 pointer-events-auto"
+          whileHover={{ scale: 1.1, x: 8 }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </motion.button>
+      </div>
+
+      {/* Indicator dots */}
+      <div className="flex justify-center gap-2 mt-2">
+        {testimonials.map((_, index) => (
+          <motion.button
+            key={index}
+            onClick={() => navigateTo(index)}
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+              activeIndex === index
+                ? 'bg-white w-8'
+                : 'bg-white/40 hover:bg-white/60'
+            }`}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+          />
+        ))}
+      </div>
+      
+      {/* Auto-scroll indicator */}
+      <motion.div 
+        className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-60"
+        initial={{ width: '0%' }}
+        animate={{
+          width: isPaused ? '0%' : '100%'
+        }}
+        transition={{
+          duration: isPaused ? 0 : 8, // Match interval time
+          ease: "linear",
+          repeat: isPaused ? 0 : Infinity,
+          repeatType: "loop"
+        }}
+      />
+    </div>
   );
 });
 
@@ -1664,6 +3331,109 @@ function App() {
               <Element name="projects" className="optimize-scroll">
                 <EnhancedProjectSection />
               </Element>
+
+              {/* Ultra-Futuristic Achievements/Certifications Section - 2050 Style */}
+              <AdvancedCertificationShowcase />
+
+              {/* Ultra-Modern Testimonials Section */}
+              <motion.section 
+                className="py-20 px-8 relative bg-gradient-to-b from-gray-900 to-black overflow-hidden"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ duration: 0.8 }}
+                viewport={{ once: true, amount: 0.2 }}
+              >
+                {/* Animated background elements */}
+                <div className="absolute inset-0 z-0">
+                  <motion.div 
+                    className="absolute w-[500px] h-[500px] rounded-full bg-purple-700/30 blur-[100px]"
+                    style={{ top: '10%', left: '5%' }}
+                    animate={{ 
+                      opacity: [0.3, 0.5, 0.3], 
+                      scale: [1, 1.2, 1] 
+                    }}
+                    transition={{ 
+                      duration: 10, 
+                      repeat: Infinity,
+                      repeatType: "reverse" 
+                    }}
+                  />
+                  <motion.div 
+                    className="absolute w-[400px] h-[400px] rounded-full bg-blue-500/20 blur-[100px]"
+                    style={{ bottom: '5%', right: '10%' }}
+                    animate={{ 
+                      opacity: [0.2, 0.4, 0.2], 
+                      scale: [1.2, 1, 1.2] 
+                    }}
+                    transition={{ 
+                      duration: 12, 
+                      repeat: Infinity,
+                      repeatType: "reverse" 
+                    }}
+                  />
+                  
+                  {/* Geometric tech pattern overlay */}
+                  <div className="absolute inset-0 opacity-5 mix-blend-screen" 
+                       style={{ 
+                         backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                         backgroundPosition: 'center',
+                       }}
+                  />
+                </div>
+
+                <div className="max-w-6xl mx-auto relative z-10">
+                  {/* Section heading with animated gradient */}
+                  <motion.div 
+                    className="text-center mb-16"
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    viewport={{ once: true }}
+                  >
+                    <motion.h2 
+                      className="text-4xl md:text-5xl font-extrabold mb-4 text-transparent bg-clip-text"
+                      style={{ 
+                        backgroundImage: 'linear-gradient(to right, #c084fc, #818cf8, #38bdf8, #818cf8, #c084fc)',
+                        backgroundSize: '300% auto',
+                      }}
+                      animate={{ 
+                        backgroundPosition: ['0% center', '100% center', '0% center'],
+                      }}
+                      transition={{ 
+                        duration: 10, 
+                        repeat: Infinity,
+                        repeatType: "loop" 
+                      }}
+                    >
+                      Client Testimonials
+                    </motion.h2>
+                    <motion.div
+                      className="h-1 w-24 mx-auto bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600"
+                      animate={{ 
+                        scaleX: [1, 1.5, 1],
+                        opacity: [0.6, 1, 0.6],
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity,
+                        repeatType: "reverse" 
+                      }}
+                    />
+                    <motion.p 
+                      className="text-gray-300 max-w-2xl mx-auto mt-4 text-lg"
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ duration: 1, delay: 0.2 }}
+                      viewport={{ once: true }}
+                    >
+                      Hear what clients and collaborators have to say about working with me
+                    </motion.p>
+                  </motion.div>
+
+                  {/* Testimonials carousel */}
+                  <TestimonialCarousel />
+                </div>
+              </motion.section>
 
               <Element name="contact" className="optimize-scroll">
                 <EnhancedContactSection />
