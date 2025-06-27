@@ -1886,6 +1886,7 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
   // Track which card is being hovered for hover effects
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
+  // Updated certifications with proper path references to images
   const certifications = [
     {
       id: "british-airways Data Science",
@@ -1894,8 +1895,8 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
       date: "December 2023",
       credentialId: "vPaWPWeLB9fbLzrS3",
       description: "Completed a virtual data science internship with British Airways where I applied web scraping and sentiment analysis to customer reviews, and built a classification model to predict customer purchasing behavior.",
-      logo: "British_Airways.png",
-      image: "British_Airways.png",
+      logo: "/certificates/British_Airways.png",
+      image: "/certificates/British_Airways.png",
       certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/British%20Airways/NjynCWzGSaWXQCxSX_British%20Airways_dzz8iZuAAdX3YD6KC_1701898649252_completion_certificate.pdf",
       skills: ["Airport Planning, Assumption Building, Communication, Data Modeling, Data Science, Data Visualization, Machine Learning, Power point"]
     },
@@ -1906,8 +1907,8 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
       date: "December 2023",
       credentialId: "LjJbavuCxTjfNdAss",
       description: "Completed the BCG X Data Science Virtual Internship, where I developed a churn prediction model for a major energy client (PowerCo), performed EDA, feature engineering, and used a Random Forest classifier to inform pricing strategy and reduce customer attrition.",
-      logo: "BCG_X.jpg",
-      image: "BCG_X.jpg",
+      logo: "/certificates/BCG_X.jpg",
+      image: "/certificates/BCG_X.jpg",
       certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/BCG%20/Tcz8gTtprzAS4xSoK_BCG_dzz8iZuAAdX3YD6KC_1702928416915_completion_certificate.pdf",
       skills: ["Business Understanding, Client Communication, Communication, Creativity, Hypothesis Framing, Exploratory Data Analysis (EDA), Data Visualization, Mathematical Modelling, Model Evaluation, Model Interpretation, Programming, Synthesis"]
     },
@@ -1918,8 +1919,8 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
       date: "January 2024",
       credentialId: "LjJbavuCxTjfNdAss",
       description: "Completed a real-world data analytics project simulating industry workflows. Applied data wrangling, validation, statistical testing, and visualization using Python to extract insights. Developed dashboards and communicated findings through presentations, showcasing commercial thinking, programming, and communication skills to support data-driven decision-making.",
-      logo: "Quantium.jpg.webp",
-      image: "Quantium.jpg.webp",
+      logo: "/certificates/Quantium.jpg",
+      image: "/certificates/Quantium.jpg",
       certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/Quantium/NkaC7knWtjSbi6aYv_Quantium_dzz8iZuAAdX3YD6KC_1704417772874_completion_certificate.pdf",
       skills: ["Commercial Thinking, Communication Skills, Data Analysis, Data Validation, Data Visualization, Data Wrangling, Presentation Skills Programming, Statistical Testing"]
     },
@@ -1930,8 +1931,8 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
       date: "January 2024",
       credentialId: "fKNpebdZgXg7XakT4",
       description: "Completed PwC Switzerland's Power BI Virtual Internship, developing dashboards for call center analysis, customer retention, and diversity metrics. Utilized data modeling, DAX, and visualization techniques to deliver clear business insights.",
-      logo: "PWC Switzerland.png", 
-      image: "PWC Switzerland.png",
+      logo: "/certificates/PWC_Switzerland.png", 
+      image: "/certificates/PWC_Switzerland.png",
       certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/PwC%20Switzerland/a87GpgE6tiku7q3gu_PwC%20Switzerland_dzz8iZuAAdX3YD6KC_1705367103774_completion_certificate.pdf",
       skills: ["Power BI Development, Dashboard Design & Visualization, Calculating Measures (DAX), Defining and Tracking KPIs, Insight Generation & Business Actions, Data-Driven Decision Making, Self-Reflection & Continuous Improvement"]
     },
@@ -1941,9 +1942,9 @@ const AdvancedCertificationShowcase = memo(function AdvancedCertificationShowcas
       issuer: "Accenture",
       date: "January 2024",
       credentialId: "puq3dn8d6vnKYK5fD",
-      description: "Completed Accenture Analyzed Social Buzz’s content data to identify top-performing categories. Cleaned and modeled datasets, created visual dashboards, and presented strategic insights to support IPO readiness using data analysis, visualization, and storytelling skills.",
-      logo: "Accenture.jpg.webp",
-      image: "Accenture.jpg.webp",
+      description: "Completed Accenture Analyzed Social Buzz's content data to identify top-performing categories. Cleaned and modeled datasets, created visual dashboards, and presented strategic insights to support IPO readiness using data analysis, visualization, and storytelling skills.",
+      logo: "/certificates/Accenture.jpg",
+      image: "/certificates/Accenture.jpg",
       certificateUrl: "https://forage-uploads-prod.s3.amazonaws.com/completion-certificates/Accenture%20North%20America/hzmoNKtzvAzXsEqx8_Accenture%20North%20America_dzz8iZuAAdX3YD6KC_1718480772884_completion_certificate.pdf",
       skills: ["Data Modeling, Data Understanding, Data Visualization, Communication, Public Speaking, Teamwork, Storytelling, Project Planning, Presentations, Strategic Thinking"]
     }
