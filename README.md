@@ -1,8 +1,6 @@
 ## Portfolio Website
 
-## 🚀 Live Demo
-
-[Visit My Portfolio](https://kirthikramadoss.co.uk)
+## 🌐 [Live Demo](https://kirthikramadoss.co.uk/#)
 
 ## 📝 Description
 
